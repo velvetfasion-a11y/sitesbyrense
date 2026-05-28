@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sites by Rensé</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --black:#000; --white:#fff; --green:#2ecc71; --gray:#888; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Georgia', Georgia, serif; background: var(--black); color: var(--white); overflow-x: hidden; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; justify-content: flex-end; align-items: center;
+    padding: 1.2rem 2rem; gap: 1.5rem;
+  }
+  nav a { font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); text-decoration: none; transition: color 0.2s; }
+  nav a:hover { color: var(--white); }
+  #nav-user-name { font-size: 0.72rem; letter-spacing: 0.2em; color: var(--white); }
+
+  /* HERO */
+  #hero {
+    position: relative;
+    min-height: 100vh;
+    background: var(--black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-bg video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.42;
+    filter: grayscale(70%) contrast(0.95);
+  }
+
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.58);
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #hero::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: min(320px, 38vh);
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--black));
+  }
+
+  /* Headline animates in once, then stays */
+  .hero-headline {
+    font-size: clamp(1.4rem, 4vw, 2.8rem);
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: var(--white);
+    line-height: 1.15;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: revealUp 2s ease forwards 0.4s;
+  }
+  @keyframes revealUp {
+    0%   { opacity: 0; transform: translateY(18px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CTA — hidden, fades in after animation */
+  .btn-cta {
+    margin-top: 2.5rem;
+    padding: 0.6rem 1.8rem;
+    font-family: 'Georgia', Georgia, serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--white);
+    background: transparent;
+    border: 1px solid var(--white);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.9s ease, transform 0.9s ease, border-color 0.25s, color 0.25s;
+    pointer-events: none;
+  }
+  .btn-cta.visible { opacity: 1; transform: translateY(0); pointer-events: all; }
+  .btn-cta:hover { border-color: var(--green); color: var(--green); }
+
+  /* FEATURES */
+  #features {
+    padding: 3.5rem 2rem;
+    background: var(--black);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .features-label { text-align: center; font-size: 0.75rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 2rem; }
+  .features-grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: 1.4rem clamp(2.5rem, 8vw, 5.5rem);
+    width: fit-content;
+    margin: 0 auto;
+  }
+  .feature-item { display: flex; align-items: flex-start; gap: 0.85rem; font-size: clamp(0.9rem, 1.8vw, 1rem); line-height: 1.5; white-space: nowrap; }
+  .check { color: var(--green); flex-shrink: 0; margin-top: 2px; }
+
+  /* RECOMMENDATIONS */
+  #recommendations { padding: 2.5rem 1.5rem; background: var(--black); }
+  .rec-label {
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 2rem;
+  }
+  .rec-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .rec-card { text-align: center; min-width: 0; }
+  .rec-stars {
+    font-size: 0.48rem;
+    letter-spacing: 0.18em;
+    color: var(--white);
+    margin-bottom: 0.75rem;
+  }
+  .rec-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 0 auto 0.55rem;
+    overflow: hidden;
+  }
+  .rec-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%);
+    opacity: 0.9;
+  }
+  .rec-name {
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.45rem;
+  }
+  .rec-text {
+    font-size: 0.65rem;
+    color: var(--gray);
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0 auto;
+  }
+
+  /* SUBSCRIBE */
+  #subscribe { padding: 3.5rem 2rem; text-align: center; background: var(--black); }
+  .subscribe-label { font-size: 0.75rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 1.2rem; }
+  .subscribe-heading { font-size: clamp(1.6rem, 4vw, 2.8rem); font-weight: 400; letter-spacing: 0.04em; margin-bottom: 0.8rem; }
+  .subscribe-sub { font-size: 0.95rem; color: var(--gray); font-style: italic; margin-bottom: 2.5rem; }
+  .subscribe-form { display: flex; max-width: 400px; margin: 0 auto; border: 1px solid #333; }
+  .subscribe-form input { flex: 1; padding: 0.9rem 1.2rem; background: transparent; border: none; outline: none; font-family: 'Georgia', Georgia, serif; font-size: 0.85rem; color: var(--white); }
+  .subscribe-form input::placeholder { color: var(--gray); }
+  .subscribe-form button { padding: 0.9rem 1.5rem; background: var(--white); color: var(--black); border: none; font-family: 'Georgia', Georgia, serif; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .subscribe-form button:hover { background: var(--green); }
+
+  /* FOOTER */
+  footer { padding: 2rem 2rem; text-align: center; background: var(--black); }
+  footer p { font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: #444; }
+
+  /* MODAL */
+  #modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease; padding: 1.5rem;
+  }
+  #modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #0d0d0d; border: 1px solid #2a2a2a; width: 100%; max-width: 480px;
+    padding: 3rem 2.5rem; position: relative;
+    transform: translateY(20px); transition: transform 0.3s ease;
+  }
+  #modal-overlay.open .modal { transform: translateY(0); }
+  .modal-close { position: absolute; top: 1.2rem; right: 1.4rem; background: none; border: none; color: var(--gray); font-size: 1.4rem; cursor: pointer; transition: color 0.2s; }
+  .modal-close:hover { color: var(--white); }
+  .modal-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+  .modal-sub { font-size: 0.82rem; color: var(--gray); font-style: italic; margin-bottom: 2rem; line-height: 1.5; }
+  .modal-field { margin-bottom: 1.2rem; }
+  .modal-field label { display: block; font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
+  .modal-field input, .modal-field textarea { width: 100%; background: transparent; border: 1px solid #2a2a2a; padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; transition: border-color 0.2s; resize: vertical; }
+  .modal-field input:focus, .modal-field textarea:focus { border-color: #555; }
+  .modal-field input::placeholder, .modal-field textarea::placeholder { color: #444; }
+  .modal-field input:read-only { color: var(--gray); cursor: default; }
+  .modal-submit { width: 100%; padding: 0.95rem; margin-top: 0.6rem; background: var(--white); color: var(--black); border: none; font-family: 'Georgia', Georgia, serif; font-size: 0.78rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .modal-submit:hover { background: var(--green); }
+  .modal-success { display: none; text-align: center; padding: 2rem 0; }
+  .modal-success .success-icon { font-size: 2rem; color: var(--green); margin-bottom: 1rem; }
+  .modal-success p { color: var(--gray); font-style: italic; font-size: 0.9rem; line-height: 1.6; }
+
+  @media (max-width: 560px) {
+    .modal { padding: 2rem 1.5rem; }
+    .feature-item { font-size: 0.85rem; white-space: normal; }
+    .features-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+    .rec-list { gap: 0.65rem; max-width: 100%; }
+    .rec-stars { font-size: 0.42rem; margin-bottom: 0.55rem; }
+    .rec-avatar { width: 32px; height: 32px; }
+    .rec-name { font-size: 0.65rem; }
+    .rec-text { font-size: 0.58rem; line-height: 1.45; }
+  }
+
+  /* CONTACT SECTION */
+  #contact { padding: 3.5rem 2rem; background: var(--black); text-align: center; }
+  .contact-label { font-size: 0.75rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 1.2rem; }
+  .contact-heading { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 400; letter-spacing: 0.06em; color: var(--white); margin-bottom: 3rem; }
+  .contact-form { max-width: 480px; margin: 0 auto; text-align: left; }
+  .contact-field { margin-bottom: 1.3rem; }
+  .contact-field label { display: block; font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
+  .contact-field input, .contact-field textarea { width: 100%; background: transparent; border: 1px solid #2a2a2a; padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; transition: border-color 0.2s; resize: vertical; }
+  .contact-field input:focus, .contact-field textarea:focus { border-color: #555; }
+  .contact-field input::placeholder, .contact-field textarea::placeholder { color: #444; }
+  .contact-submit { width: 100%; padding: 0.9rem; margin-top: 0.4rem; background: transparent; color: var(--white); border: 1px solid var(--white); font-family: 'Georgia', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; cursor: pointer; transition: border-color 0.25s, color 0.25s; }
+  .contact-submit:hover { border-color: var(--green); color: var(--green); }
+  .contact-success { text-align: center; margin-top: 1rem; font-size: 0.82rem; font-style: italic; color: var(--green); min-height: 1.2rem; }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span id="nav-user-name"></span>
+  <a href="login.html" id="nav-login">Sign In</a>
+  <a href="profile.html" id="nav-profile" style="display:none">My Profile</a>
+  <a href="#" id="nav-logout" style="display:none">Sign Out</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <video id="hero-bg-video" src="assets/hero-bg.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="hero-content">
+    <h1 class="hero-headline">Launch your website.</h1>
+    <button class="btn-cta" id="openModal">Contact Now</button>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <p class="features-label">What you get</p>
+  <div class="features-grid">
+    <div class="feature-item"><span class="check">✓</span><span>Custom Made</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>SEO Optimized</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Mobile Friendly</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Secure Hosting</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Personal Admin Panel</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Free Revisions</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Fast Delivery</span></div>
+    <div class="feature-item"><span class="check">✓</span><span>Ongoing Support</span></div>
+  </div>
+</section>
+
+<!-- RECOMMENDATIONS -->
+<section id="recommendations">
+  <p class="rec-label">Some of our clients</p>
+  <div class="rec-list">
+    <article class="rec-card">
+      <p class="rec-stars">★★★★★</p>
+      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=47" alt="" width="40" height="40" /></div>
+      <p class="rec-name">Sarah Chen</p>
+      <p class="rec-text">Launched my studio site in under two weeks. Clean, fast, and exactly the look I wanted.</p>
+    </article>
+    <article class="rec-card">
+      <p class="rec-stars">★★★★★</p>
+      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=12" alt="" width="40" height="40" /></div>
+      <p class="rec-name">Marcus Webb</p>
+      <p class="rec-text">Professional from start to finish. My portfolio finally feels like me — and bookings went up.</p>
+    </article>
+    <article class="rec-card">
+      <p class="rec-stars">★★★★★</p>
+      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=32" alt="" width="40" height="40" /></div>
+      <p class="rec-name">Elena Ruiz</p>
+      <p class="rec-text">Simple process, beautiful result. The admin panel makes updating my site effortless.</p>
+    </article>
+  </div>
+</section>
+
+<!-- CONTACT SECTION -->
+<section id="contact">
+  <p class="contact-label">Get in touch</p>
+  <h2 class="contact-heading">Tell us about your website.</h2>
+  <div class="contact-form">
+    <div class="contact-field">
+      <label for="c-name">Name</label>
+      <input type="text" id="c-name" placeholder="Your full name" />
+    </div>
+    <div class="contact-field">
+      <label for="c-desc">Describe your website</label>
+      <textarea id="c-desc" rows="4" placeholder="What kind of website do you have in mind?"></textarea>
+    </div>
+    <div class="contact-field">
+      <label for="c-phone">Phone Number</label>
+      <input type="tel" id="c-phone" placeholder="+1 000 000 0000" />
+    </div>
+    <div class="contact-field">
+      <label for="c-email">Email</label>
+      <input type="email" id="c-email" placeholder="your@email.com" />
+    </div>
+    <button class="contact-submit" id="contactSubmit">Send Message</button>
+    <p class="contact-success" id="contactSuccess"></p>
+  </div>
+</section>
+
+<!-- SUBSCRIBE -->
+<section id="subscribe">
+  <p class="subscribe-label">Stay in the loop</p>
+  <h2 class="subscribe-heading">Subscribe to Rensé</h2>
+  <p class="subscribe-sub">Updates, launches, and inspiration — straight to you.</p>
+  <div class="subscribe-form">
+    <input type="email" placeholder="Your email address" id="subEmail" />
+    <button type="button" id="subBtn">Subscribe</button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>&copy; <span id="year"></span> Rensé &nbsp;·&nbsp; All rights reserved</p>
+</footer>
+
+<!-- CONTACT MODAL -->
+<div id="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" id="closeModal">&times;</button>
+    <div id="modal-form-wrap">
+      <h2 class="modal-title">Tell us about your website</h2>
+      <p class="modal-sub">Fill in the details below and we'll be in touch shortly.</p>
+      <div class="modal-field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" placeholder="Your full name" />
+      </div>
+      <div class="modal-field">
+        <label for="f-desc">Website Description</label>
+        <textarea id="f-desc" rows="3" placeholder="What kind of website do you want?"></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="f-email">Email</label>
+        <input type="email" id="f-email" placeholder="your@email.com" />
+      </div>
+      <div class="modal-field">
+        <label for="f-phone">Phone Number</label>
+        <input type="tel" id="f-phone" placeholder="+1 000 000 0000" />
+      </div>
+      <button class="modal-submit" id="submitModal">Send Message</button>
+    </div>
+    <div class="modal-success" id="modal-success">
+      <div class="success-icon">✓</div>
+      <p>Thank you — we've received your details<br>and will be in touch very soon.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  const heroBgVideo = document.getElementById('hero-bg-video');
+  heroBgVideo.play().catch(() => {
+    document.addEventListener('click', () => heroBgVideo.play(), { once: true });
+  });
+
+  // CTA fades in after the headline animation finishes (0.4s delay + 2s duration = 2.4s)
+  setTimeout(() => {
+    document.getElementById('openModal').classList.add('visible');
+  }, 2600);
+
+  // Modal
+  const overlay    = document.getElementById('modal-overlay');
+  const formWrap   = document.getElementById('modal-form-wrap');
+  const successMsg = document.getElementById('modal-success');
+
+  document.getElementById('openModal').addEventListener('click', () => {
+    overlay.classList.add('open');
+  });
+  document.getElementById('closeModal').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  document.getElementById('submitModal').addEventListener('click', () => {
+    const name  = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    if (!name || !email) return;
+    formWrap.style.display = 'none';
+    successMsg.style.display = 'block';
+    setTimeout(() => {
+      overlay.classList.remove('open');
+      setTimeout(() => {
+        formWrap.style.display = 'block';
+        successMsg.style.display = 'none';
+        ['f-name','f-email','f-desc','f-phone'].forEach(id => document.getElementById(id).value = '');
+      }, 400);
+    }, 2800);
+  });
+
+  // Inline contact form
+  document.getElementById('contactSubmit').addEventListener('click', () => {
+    const name  = document.getElementById('c-name').value.trim();
+    const email = document.getElementById('c-email').value.trim();
+    const msg   = document.getElementById('contactSuccess');
+    if (!name || !email) { msg.style.color='#e74c3c'; msg.textContent='Please enter your name and email.'; return; }
+    msg.style.color = '#2ecc71';
+    msg.textContent = 'Thank you — we will be in touch shortly.';
+    ['c-name','c-desc','c-phone','c-email'].forEach(id => document.getElementById(id).value = '');
+    setTimeout(() => msg.textContent = '', 4000);
+  });
+
+  // Subscribe
+  document.getElementById('subBtn').addEventListener('click', () => {
+    const email = document.getElementById('subEmail').value.trim();
+    if (email) {
+      document.getElementById('subBtn').textContent = '✓';
+      document.getElementById('subBtn').style.background = '#2ecc71';
+      document.getElementById('subEmail').value = '';
+      setTimeout(() => {
+        document.getElementById('subBtn').textContent = 'Subscribe';
+        document.getElementById('subBtn').style.background = '';
+      }, 3000);
+    }
+  });
+</script>
+
+<!-- Uncomment and paste your Firebase config when ready
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  const firebaseConfig = { apiKey:"YOUR_KEY", authDomain:"YOUR_DOMAIN", projectId:"YOUR_ID", storageBucket:"YOUR_BUCKET", messagingSenderId:"YOUR_SENDER", appId:"YOUR_APP" };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('nav-login').style.display = 'none';
+      document.getElementById('nav-profile').style.display = 'inline';
+      document.getElementById('nav-logout').style.display = 'inline';
+      document.getElementById('nav-user-name').textContent = user.displayName || user.email;
+    }
+  });
+  document.getElementById('nav-logout').addEventListener('click', (e) => { e.preventDefault(); signOut(auth); });
+</script>
+-->
+
+</body>
+</html>

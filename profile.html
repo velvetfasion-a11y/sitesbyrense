@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Profile — Sites by Rensé</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --black:#000; --white:#fff; --green:#2ecc71; --gray:#888; }
+  body { font-family: 'Georgia', Georgia, serif; background: var(--black); color: var(--white); min-height: 100vh; padding: 0; }
+
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 1.4rem 2.5rem; border-bottom: 1px solid #1a1a1a; }
+  .nav-brand { font-size: 0.75rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); text-decoration: none; }
+  .nav-links { display: flex; gap: 1.8rem; align-items: center; }
+  .nav-links a { font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--white); }
+  .nav-links a.danger:hover { color: #e74c3c; }
+
+  .page { max-width: 680px; margin: 0 auto; padding: 4rem 2rem; }
+  .page-title { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 400; letter-spacing: 0.02em; margin-bottom: 0.5rem; }
+  .page-sub { font-size: 0.88rem; color: var(--gray); font-style: italic; margin-bottom: 3rem; }
+
+  .section-label { font-size: 0.68rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 1.4rem; padding-bottom: 0.6rem; border-bottom: 1px solid #1a1a1a; }
+
+  .field { margin-bottom: 1.3rem; }
+  .field label { display: block; font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
+  .field input { width: 100%; background: transparent; border: 1px solid #2a2a2a; padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.9rem; color: var(--white); outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: #555; }
+  .field input::placeholder { color: #444; }
+  .field input:read-only { color: var(--gray); border-color: #1a1a1a; cursor: default; }
+
+  .btn-row { display: flex; gap: 1rem; margin-top: 1.8rem; flex-wrap: wrap; }
+  .btn { padding: 0.85rem 2rem; font-family: 'Georgia', Georgia, serif; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .btn-white { background: var(--white); color: var(--black); }
+  .btn-white:hover { background: var(--green); }
+  .btn-outline { background: transparent; color: var(--white); border: 1px solid #333; }
+  .btn-outline:hover { border-color: var(--white); }
+
+  /* Messages */
+  .messages-wrap { margin-top: 3rem; }
+  .message-card { border: 1px solid #1a1a1a; padding: 1.5rem; margin-bottom: 1rem; }
+  .message-date { font-size: 0.68rem; letter-spacing: 0.2em; color: var(--gray); margin-bottom: 0.7rem; text-transform: uppercase; }
+  .message-desc { font-size: 0.9rem; color: var(--white); line-height: 1.6; font-style: italic; margin-bottom: 0.5rem; }
+  .message-status { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; }
+  .status-new { color: var(--gray); }
+  .status-paid { color: var(--green); }
+  .status-pending { color: #f39c12; }
+
+  .payment-banner { border: 1px solid #2a2a2a; padding: 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .payment-amount { font-size: 1.5rem; letter-spacing: 0.04em; }
+  .payment-label { font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.3rem; }
+  .btn-pay { padding: 0.75rem 1.8rem; background: var(--green); color: var(--black); border: none; font-family: 'Georgia', Georgia, serif; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; text-decoration: none; display: inline-block; }
+
+  .empty-state { text-align: center; padding: 3rem 0; color: var(--gray); font-style: italic; font-size: 0.9rem; }
+
+  .toast { position: fixed; bottom: 2rem; right: 2rem; background: #1a1a1a; border: 1px solid #333; padding: 1rem 1.5rem; font-size: 0.8rem; letter-spacing: 0.1em; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Sites by Rensé</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="#" id="btn-logout" class="danger">Sign Out</a>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">My Profile</h1>
+  <p class="page-sub">Manage your details and track your website projects.</p>
+
+  <p class="section-label">Account Details</p>
+  <div class="field"><label>Full Name</label><input type="text" id="p-name" placeholder="Your full name"/></div>
+  <div class="field"><label>Email</label><input type="email" id="p-email" readonly/></div>
+  <div class="field"><label>Phone Number</label><input type="tel" id="p-phone" placeholder="+1 000 000 0000"/></div>
+
+  <div class="btn-row">
+    <button class="btn btn-white" id="btn-save">Save Changes</button>
+    <button class="btn btn-outline" id="btn-request">New Website Request</button>
+  </div>
+
+  <div class="messages-wrap">
+    <p class="section-label" style="margin-top:2.5rem">My Requests</p>
+    <div id="messages-list"><p class="empty-state">No requests yet.</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MINI REQUEST MODAL -->
+<div id="req-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;padding:1.5rem;">
+  <div style="background:#0d0d0d;border:1px solid #2a2a2a;width:100%;max-width:460px;padding:2.5rem;position:relative;transform:translateY(20px);transition:transform 0.3s;" id="req-modal">
+    <button onclick="closeReq()" style="position:absolute;top:1rem;right:1.3rem;background:none;border:none;color:#888;font-size:1.4rem;cursor:pointer;">&times;</button>
+    <h2 style="font-size:1.3rem;font-weight:400;margin-bottom:0.4rem;">New Website Request</h2>
+    <p style="font-size:0.82rem;color:#888;font-style:italic;margin-bottom:1.8rem;">Describe what you're looking for.</p>
+    <div class="field"><label>Website Description</label><textarea id="req-desc" rows="4" style="width:100%;background:transparent;border:1px solid #2a2a2a;padding:0.75rem 1rem;font-family:Georgia,serif;font-size:0.88rem;color:#fff;outline:none;resize:vertical;" placeholder="Tell us about your website idea..."></textarea></div>
+    <button class="btn btn-white" style="width:100%;margin-top:0.5rem;" id="btn-req-submit">Send Request</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  let currentUser = null;
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = 'login.html'; return; }
+    currentUser = user;
+    document.getElementById('p-email').value = user.email;
+    document.getElementById('p-name').value  = user.displayName || '';
+
+    // Load phone from Firestore
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (snap.exists()) {
+      document.getElementById('p-phone').value = snap.data().phone || '';
+    }
+
+    loadMessages(user.uid);
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', (e) => {
+    e.preventDefault(); signOut(auth).then(() => window.location.href = 'index.html');
+  });
+
+  document.getElementById('btn-save').addEventListener('click', async () => {
+    const phone = document.getElementById('p-phone').value.trim();
+    await updateDoc(doc(db, 'users', currentUser.uid), { phone });
+    showToast('Profile updated ✓');
+  });
+
+  // Load messages
+  async function loadMessages(uid) {
+    const list = document.getElementById('messages-list');
+    list.innerHTML = '';
+    const q = query(collection(db, 'messages'), where('uid','==',uid), orderBy('createdAt','desc'));
+    const snaps = await getDocs(q);
+    if (snaps.empty) { list.innerHTML = '<p class="empty-state">No requests yet.</p>'; return; }
+    snaps.forEach(d => {
+      const m = d.data();
+      const date = m.createdAt ? new Date(m.createdAt.toDate()).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}) : 'Just now';
+      const statusClass = m.status === 'paid' ? 'status-paid' : m.status === 'pending_payment' ? 'status-pending' : 'status-new';
+      const statusLabel = m.status === 'paid' ? '✓ Paid' : m.status === 'pending_payment' ? '● Payment Pending' : '○ New';
+
+      let payBlock = '';
+      if (m.status === 'pending_payment' && m.paymentLink && m.paymentAmount) {
+        payBlock = `<div class="payment-banner">
+          <div><p class="payment-label">Amount Due</p><p class="payment-amount">$${m.paymentAmount}</p></div>
+          <a href="${m.paymentLink}" target="_blank" class="btn-pay">Pay Now →</a>
+        </div>`;
+      }
+
+      list.innerHTML += `<div class="message-card">
+        <p class="message-date">${date}</p>
+        ${payBlock}
+        <p class="message-desc">${m.description || '—'}</p>
+        <p class="message-status ${statusClass}">${statusLabel}</p>
+      </div>`;
+    });
+  }
+
+  // Request modal
+  document.getElementById('btn-request').addEventListener('click', () => {
+    const ov = document.getElementById('req-overlay');
+    const mo = document.getElementById('req-modal');
+    ov.style.opacity = '1'; ov.style.pointerEvents = 'all';
+    mo.style.transform = 'translateY(0)';
+  });
+
+  window.closeReq = function() {
+    const ov = document.getElementById('req-overlay');
+    const mo = document.getElementById('req-modal');
+    ov.style.opacity = '0'; ov.style.pointerEvents = 'none';
+    mo.style.transform = 'translateY(20px)';
+  };
+
+  document.getElementById('req-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('req-overlay')) closeReq();
+  });
+
+  document.getElementById('btn-req-submit').addEventListener('click', async () => {
+    const desc = document.getElementById('req-desc').value.trim();
+    if (!desc) return;
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    const userData = snap.exists() ? snap.data() : {};
+    await addDoc(collection(db, 'messages'), {
+      uid: currentUser.uid,
+      name: currentUser.displayName || userData.name || '',
+      email: currentUser.email,
+      phone: userData.phone || '',
+      description: desc,
+      createdAt: serverTimestamp(),
+      status: 'new'
+    });
+    closeReq();
+    document.getElementById('req-desc').value = '';
+    showToast('Request sent ✓');
+    loadMessages(currentUser.uid);
+  });
+</script>
+</body>
+</html>
