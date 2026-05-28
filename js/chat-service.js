@@ -99,10 +99,13 @@ export function subscribeToConversations(callback) {
 }
 
 export async function markConversationRead(clientUid, role) {
+  if (!clientUid) return;
   const field = role === 'admin' ? 'unreadByAdmin' : 'unreadByClient';
-  const ref = doc(db, 'conversations', clientUid);
-  const snap = await getDoc(ref);
-  if (snap.exists()) await updateDoc(ref, { [field]: 0 });
+  try {
+    await updateDoc(doc(db, 'conversations', clientUid), { [field]: 0 });
+  } catch (err) {
+    console.error('markConversationRead failed:', err);
+  }
 }
 
 export function renderClientMessages(container, messages, clientName) {

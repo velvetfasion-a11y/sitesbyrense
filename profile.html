@@ -14,8 +14,8 @@
   .topbar { position: sticky; top: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #080808; border-bottom: 1px solid var(--dim); }
   .topbar-brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); text-decoration: none; }
   .topbar-name { font-size: 0.72rem; letter-spacing: 0.18em; color: var(--white); }
-  .btn-signout { background: transparent; border: none; color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 0.4rem 0; transition: color 0.2s; }
-  .btn-signout:hover { color: #e74c3c; }
+  .btn-signout { background: transparent; border: 1px solid var(--dim); color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 0.85rem; width: 100%; transition: all 0.2s; margin-top: 2.5rem; }
+  .btn-signout:hover { border-color: #e74c3c; color: #e74c3c; }
 
   .back-btn { display: none; align-items: center; gap: 0.5rem; background: transparent; border: none; color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; padding: 0; margin-bottom: 1.8rem; transition: color 0.2s; }
   .back-btn:hover { color: var(--white); }
@@ -139,10 +139,7 @@
 <div id="app">
   <div class="topbar">
     <a href="index.html" class="topbar-brand">Rensé</a>
-    <div style="display:flex;align-items:center;gap:1.2rem;">
-      <span class="topbar-name" id="topbar-name"></span>
-      <button class="btn-signout" id="btn-signout">Sign Out</button>
-    </div>
+    <span class="topbar-name" id="topbar-name"></span>
   </div>
 
   <div class="content">
@@ -171,6 +168,7 @@
           <div class="card-num">›</div>
         </div>
       </div>
+      <button class="btn-signout" id="btn-signout">Sign Out</button>
     </div>
 
     <div class="page" id="page-chat">
@@ -410,6 +408,7 @@
     unsubChatMessages = subscribeToMessages(user.uid, (snap) => {
       const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderClientMessages(document.getElementById('chat-messages'), messages, name);
+      if (window.clientChatVisible) markConversationRead(user.uid, 'client');
     });
 
     unsubChatMeta = subscribeToConversation(user.uid, (data) => {
@@ -515,6 +514,7 @@
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
+    window.clientChatVisible = name === 'chat';
     if (name === 'chat' && window.markClientChatRead) window.markClientChatRead();
     window.scrollTo(0, 0);
   }

@@ -18,7 +18,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
     }
@@ -41,6 +42,24 @@ service cloud.firestore {
           && request.resource.data.text.size() <= 2000
           && request.resource.data.senderId == request.auth.uid;
       }
+    }
+
+    match /inquiries/{inquiryId} {
+      allow create: if
+        request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 3
+        && request.resource.data.email.size() <= 200
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 5000
+        && request.resource.data.status == 'new';
+      allow read, list: if isAdmin();
+      allow update, delete: if isAdmin();
     }
   }
 }

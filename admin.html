@@ -21,7 +21,7 @@
   .topbar-brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); }
   .topbar-right { display: flex; align-items: center; gap: 1rem; }
   .gold-badge { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--gold); padding: 0.2rem 0.6rem; }
-  .btn-logout { background: transparent; border: 1px solid var(--dim); color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.4rem 0.9rem; cursor: pointer; transition: all 0.2s; }
+  .btn-logout { background: transparent; border: 1px solid var(--dim); color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.85rem; width: 100%; cursor: pointer; transition: all 0.2s; margin-top: 2rem; }
   .btn-logout:hover { border-color: #e74c3c; color: #e74c3c; }
 
   /* ── BACK BUTTON ── */
@@ -237,7 +237,6 @@
     <a href="index.html" class="topbar-brand" style="text-decoration:none; cursor:pointer;">Rensé</a>
     <div class="topbar-right">
       <span class="gold-badge" style="position:relative;">Admin<span id="topbar-unread" style="display:none;position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:var(--white);color:var(--black);font-size:0.5rem;font-weight:bold;align-items:center;justify-content:center;border:2px solid #080808;">0</span></span>
-      <button class="btn-logout" id="btn-logout">Sign Out</button>
     </div>
   </div>
 
@@ -273,6 +272,7 @@
         </div>
       </div>
       <p style="text-align:center;color:var(--gray);font-style:italic;font-size:0.82rem;">Use the navigation below to manage your workspace.</p>
+      <button class="btn-logout" id="btn-logout">Sign Out</button>
     </div>
 
     <!-- ── CLIENTS ── -->
@@ -446,9 +446,10 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  import { auth } from './firebase-config.js';
+  import { auth, db } from './firebase-config.js';
   import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { isAdminUser } from './js/auth-helpers.js';
+  import { collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { isAdminUser, ADMIN_EMAILS } from './js/auth-helpers.js';
   import {
     subscribeToConversations, subscribeToMessages, sendChatMessage,
     markConversationRead, renderAdminMessages, getInitials, escapeHtml
@@ -457,11 +458,89 @@
   let activeClientUid = null;
   let unsubConversations = null;
   let unsubMessages = null;
+  let unsubUsers = null;
   const conversationsMap = new Map();
+
+  function isRegisteredAccount(data) {
+    if (!data) return false;
+    if (data.role === 'admin' || ADMIN_EMAILS.includes(data.email)) return false;
+    if (data.subscriptionStatus === 'active') return false;
+    return true;
+  }
+
+  function formatJoined(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  function startAdminAccounts() {
+    if (unsubUsers) unsubUsers();
+    unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      const accounts = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter(isRegisteredAccount)
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+      document.getElementById('ov-accounts').textContent = String(accounts.length);
+
+      const list = document.getElementById('accounts-list');
+      if (!accounts.length) {
+        list.innerHTML = '<p class="empty-state">No registered accounts yet.</p>';
+        return;
+      }
+
+      list.innerHTML = accounts.map((u) => {
+        const name = u.name || 'Client';
+        const initials = getInitials(name);
+        const email = u.email || '—';
+        const phone = u.phone || '—';
+        const since = formatJoined(u.createdAt);
+        const safeName = escapeHtml(name);
+        const safeEmail = escapeHtml(email);
+        const safePhone = escapeHtml(phone);
+        return `<div class="row-card">
+          <div class="row-main">
+            <div class="row-avatar">${escapeHtml(initials)}</div>
+            <div class="row-info">
+              <div class="row-name">${safeName}</div>
+              <div class="row-meta">${safeEmail} · Joined ${since}</div>
+            </div>
+            <div class="row-actions">
+              <span class="pill pill-new">Registered</span>
+              <button type="button" class="btn-sm btn-outline" data-view-account="${escapeHtml(u.id)}">View</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      list.querySelectorAll('[data-view-account]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const u = accounts.find((a) => a.id === btn.dataset.viewAccount);
+          if (!u) return;
+          const name = u.name || 'Client';
+          openProfile(
+            name,
+            getInitials(name),
+            u.email || '—',
+            u.phone || '—',
+            formatJoined(u.createdAt),
+            '—',
+            'Registered',
+            false
+          );
+        });
+      });
+    }, (err) => {
+      console.error('Users error:', err);
+    });
+  }
 
   function showApp() {
     document.getElementById('app').style.display = 'block';
     initStats();
+    startAdminAccounts();
     startAdminChat();
   }
 
@@ -490,7 +569,10 @@
 
       if (snap.empty) {
         sidebar.innerHTML = '<p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>';
-        document.getElementById('ov-chats').textContent = '0';
+        const ovChats = document.getElementById('ov-chats');
+        ovChats.textContent = '0';
+        ovChats.classList.remove('has-unread');
+        document.getElementById('topbar-unread').style.display = 'none';
         window.hasUnreadMessages = false;
         return;
       }
@@ -517,7 +599,19 @@
         sidebar.appendChild(el);
       });
 
-      document.getElementById('ov-chats').textContent = String(snap.size);
+      const ovChats = document.getElementById('ov-chats');
+      ovChats.textContent = String(totalUnread);
+      ovChats.classList.toggle('has-unread', totalUnread > 0);
+
+      const topbarDot = document.getElementById('topbar-unread');
+      const page = window.adminActivePage || 'overview';
+      const showTopbar = totalUnread > 0 && page !== 'overview' && page !== 'chat';
+      if (showTopbar) {
+        topbarDot.style.display = 'flex';
+        topbarDot.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
+      } else {
+        topbarDot.style.display = 'none';
+      }
       window.hasUnreadMessages = totalUnread > 0;
     });
   }
@@ -543,12 +637,28 @@
     unsubMessages = subscribeToMessages(clientUid, (snap) => {
       const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderAdminMessages(document.getElementById('chat-messages'), messages);
+      if (window.adminChatVisible) markConversationRead(clientUid, 'admin');
     });
 
     markConversationRead(clientUid, 'admin');
   }
 
   window.selectConversation = selectConversation;
+
+  window.onAdminChatTabOpen = function onAdminChatTabOpen() {
+    if (activeClientUid) {
+      markConversationRead(activeClientUid, 'admin');
+      return;
+    }
+    for (const [uid, c] of conversationsMap.entries()) {
+      if (c.unreadByAdmin > 0) {
+        selectConversation(uid);
+        return;
+      }
+    }
+    const first = conversationsMap.keys().next().value;
+    if (first) selectConversation(first);
+  };
 
   window.goToChat = function goToChat(name) {
     switchTab('chat');
@@ -599,7 +709,9 @@
     document.getElementById('ov-clients').textContent  = '0';
     document.getElementById('ov-invoices').textContent = '0';
     document.getElementById('ov-accounts').textContent = '0';
-    document.getElementById('ov-chats').textContent    = '0';
+    const ovChats = document.getElementById('ov-chats');
+    ovChats.textContent = '0';
+    ovChats.classList.remove('has-unread');
     document.getElementById('topbar-unread').style.display = 'none';
   }
 
@@ -611,16 +723,12 @@
   function switchTab(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
-    // Show unread dot on Admin badge when not on overview
+    window.adminActivePage = name;
+    window.adminChatVisible = name === 'chat';
+    if (name === 'chat' && window.onAdminChatTabOpen) window.onAdminChatTabOpen();
     const dot = document.getElementById('topbar-unread');
-    if (name === 'overview') {
-      dot.style.display = 'none';
-    } else {
-      // Show if there are unread messages
-      if (window.hasUnreadMessages) {
-        dot.style.display = 'flex';
-      }
-    }
+    const showTopbar = window.hasUnreadMessages && name !== 'overview' && name !== 'chat';
+    dot.style.display = showTopbar ? 'flex' : 'none';
   }
   function goBack() {
     switchTab('overview');
