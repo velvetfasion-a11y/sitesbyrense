@@ -410,13 +410,6 @@
   </div>
 </div>
 
-<script type="module">
-  import { saveContactInquiry, validateContactFields } from './js/contact-form.js';
-
-  window.saveContactInquiry = saveContactInquiry;
-  window.validateContactFields = validateContactFields;
-</script>
-
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
   const EMAILJS = {
@@ -426,9 +419,7 @@
     ownerTemplate: 'template_y2kqq9i'
   };
 
-  if (typeof emailjs !== 'undefined') {
-    emailjs.init(EMAILJS.publicKey);
-  }
+  emailjs.init(EMAILJS.publicKey);
 
   function getContactFields(prefix) {
     return {
@@ -437,6 +428,19 @@
       phone: document.getElementById(prefix + '-phone').value.trim(),
       message: document.getElementById(prefix + '-desc').value.trim()
     };
+  }
+
+  function validateContactFields(fields) {
+    if (!fields.name || !fields.email) {
+      return 'Please enter your name and email.';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+      return 'Please enter a valid email address.';
+    }
+    if (!fields.message) {
+      return 'Please tell us about your website.';
+    }
+    return null;
   }
 
   function buildEmailParams(fields) {
@@ -453,30 +457,13 @@
     };
   }
 
-  async function sendContactEmail(fields) {
-    if (!EMAILJS.serviceId || EMAILJS.serviceId === 'YOUR_SERVICE_ID') return;
-    if (typeof emailjs === 'undefined') return;
+  async function sendContactMessage(fields) {
+    const validationError = validateContactFields(fields);
+    if (validationError) throw new Error(validationError);
 
     const params = buildEmailParams(fields);
     await emailjs.send(EMAILJS.serviceId, EMAILJS.ownerTemplate, params);
     await emailjs.send(EMAILJS.serviceId, EMAILJS.customerTemplate, params);
-  }
-
-  async function sendContactMessage(fields) {
-    const validationError = window.validateContactFields?.(fields);
-    if (validationError) throw new Error(validationError);
-
-    if (!window.saveContactInquiry) {
-      throw new Error('Contact form is still loading. Please try again.');
-    }
-
-    await window.saveContactInquiry(fields);
-
-    try {
-      await sendContactEmail(fields);
-    } catch (err) {
-      console.warn('Email notification skipped:', err);
-    }
   }
 
   document.getElementById('year').textContent = new Date().getFullYear();
@@ -519,7 +506,7 @@
   document.getElementById('submitModal').addEventListener('click', async () => {
     const fields = getContactFields('f');
     const msg = document.getElementById('modal-form-wrap').querySelector('.modal-sub');
-    const validationError = window.validateContactFields?.(fields);
+    const validationError = validateContactFields(fields);
     if (validationError) {
       if (msg) {
         msg.style.color = '#e74c3c';
@@ -550,7 +537,7 @@
       }, 2800);
     } catch (e) {
       console.error(e);
-      const errMsg = e.message && !e.message.includes('Firebase') && e.message.length < 120
+      const errMsg = e.message && e.message.length < 120
         ? e.message
         : 'Could not send your message. Please try again.';
       alert(errMsg);
@@ -566,7 +553,7 @@
     const msg   = document.getElementById('contactSuccess');
     const btn   = document.getElementById('contactSubmit');
 
-    const validationError = window.validateContactFields?.(fields);
+    const validationError = validateContactFields(fields);
     if (validationError) {
       msg.style.color = '#e74c3c';
       msg.textContent = validationError;
@@ -586,7 +573,7 @@
     } catch (e) {
       console.error(e);
       msg.style.color = '#e74c3c';
-      const errMsg = e.message && !e.message.includes('Firebase') && e.message.length < 120
+      const errMsg = e.message && e.message.length < 120
         ? e.message
         : 'Could not send your message. Please try again.';
       msg.textContent = errMsg;
