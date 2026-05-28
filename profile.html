@@ -186,7 +186,7 @@
         </div>
         <div class="chat-input-row">
           <input class="chat-input" id="chat-input" placeholder="Write a message…"/>
-          <button class="btn-send" onclick="sendMsg()">➤</button>
+          <button class="btn-send" id="btn-send-chat">➤</button>
         </div>
       </div>
     </div>
@@ -338,8 +338,15 @@
   } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { isAdminUser } from './js/auth-helpers.js';
+  import {
+    subscribeToMessages, subscribeToConversation, sendChatMessage,
+    markConversationRead, renderClientMessages
+  } from './js/chat-service.js';
 
   let currentUser = null;
+  let clientDisplayName = '';
+  let unsubChatMessages = null;
+  let unsubChatMeta = null;
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -391,7 +398,66 @@
     if (data.renewDate) {
       document.getElementById('sub-renew').textContent = '🔄 Renews ' + data.renewDate;
     }
+
+    startClientChat(user, name);
   });
+
+  function startClientChat(user, name) {
+    clientDisplayName = name;
+    if (unsubChatMessages) unsubChatMessages();
+    if (unsubChatMeta) unsubChatMeta();
+
+    unsubChatMessages = subscribeToMessages(user.uid, (snap) => {
+      const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderClientMessages(document.getElementById('chat-messages'), messages, name);
+    });
+
+    unsubChatMeta = subscribeToConversation(user.uid, (data) => {
+      const badge = document.getElementById('chat-badge');
+      const unread = data?.unreadByClient || 0;
+      if (unread > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = unread > 9 ? '9+' : unread;
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+  }
+
+  async function sendClientMessage() {
+    if (!currentUser) return;
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('btn-send-chat');
+    btn.disabled = true;
+    try {
+      await sendChatMessage(currentUser.uid, {
+        text,
+        senderId: currentUser.uid,
+        senderRole: 'client',
+        senderName: clientDisplayName,
+        clientName: clientDisplayName,
+        clientEmail: currentUser.email
+      });
+      input.value = '';
+    } catch (err) {
+      console.error(err);
+      showToast('Could not send message. Please try again.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('btn-send-chat').addEventListener('click', sendClientMessage);
+  document.getElementById('chat-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendClientMessage();
+  });
+
+  window.markClientChatRead = async () => {
+    if (currentUser) await markConversationRead(currentUser.uid, 'client');
+  };
 
   document.getElementById('btn-signout').addEventListener('click', async () => {
     await signOut(auth);
@@ -449,7 +515,7 @@
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
-    if (name === 'chat') document.getElementById('chat-badge').style.display = 'none';
+    if (name === 'chat' && window.markClientChatRead) window.markClientChatRead();
     window.scrollTo(0, 0);
   }
 
@@ -464,23 +530,6 @@
     document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.settings-list, .settings-title, .settings-headline').forEach(el => el.style.display = '');
   }
-
-  function sendMsg() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if (!text) return;
-    const msgs = document.getElementById('chat-messages');
-    const empty = msgs.querySelector('.chat-empty');
-    if (empty) empty.remove();
-    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    msgs.innerHTML += `<div class="msg-wrap me"><div class="msg-bubble me">${text}</div><div class="msg-time" style="text-align:right;">Today ${now}</div></div>`;
-    input.value = '';
-    msgs.scrollTop = msgs.scrollHeight;
-  }
-
-  document.getElementById('chat-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendMsg();
-  });
 
   function confirmCancel() {
     if (confirm('Are you sure you want to cancel your subscription? You will keep access until the end of your billing period.')) {

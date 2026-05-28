@@ -449,10 +449,20 @@
   import { auth } from './firebase-config.js';
   import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { isAdminUser } from './js/auth-helpers.js';
+  import {
+    subscribeToConversations, subscribeToMessages, sendChatMessage,
+    markConversationRead, renderAdminMessages, getInitials, escapeHtml
+  } from './js/chat-service.js';
+
+  let activeClientUid = null;
+  let unsubConversations = null;
+  let unsubMessages = null;
+  const conversationsMap = new Map();
 
   function showApp() {
     document.getElementById('app').style.display = 'block';
     initStats();
+    startAdminChat();
   }
 
   onAuthStateChanged(auth, async (user) => {
@@ -471,6 +481,116 @@
     await signOut(auth);
     window.location.href = 'login.html';
   });
+
+  function startAdminChat() {
+    if (unsubConversations) unsubConversations();
+    unsubConversations = subscribeToConversations((snap) => {
+      const sidebar = document.getElementById('chat-sidebar');
+      conversationsMap.clear();
+
+      if (snap.empty) {
+        sidebar.innerHTML = '<p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>';
+        document.getElementById('ov-chats').textContent = '0';
+        window.hasUnreadMessages = false;
+        return;
+      }
+
+      let totalUnread = 0;
+      sidebar.innerHTML = '';
+      snap.docs.forEach((d) => {
+        const c = d.data();
+        conversationsMap.set(d.id, c);
+        totalUnread += c.unreadByAdmin || 0;
+
+        const el = document.createElement('div');
+        el.className = 'chat-item' + (d.id === activeClientUid ? ' active' : '');
+        el.dataset.uid = d.id;
+        const unread = c.unreadByAdmin > 0 ? '<div class="chat-unread"></div>' : '';
+        el.innerHTML = `
+          <div class="chat-avatar">${escapeHtml(getInitials(c.clientName))}</div>
+          <div class="chat-item-info">
+            <div class="chat-item-name">${escapeHtml(c.clientName || 'Client')}</div>
+            <div class="chat-item-preview">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
+          </div>
+          ${unread}`;
+        el.addEventListener('click', () => selectConversation(d.id));
+        sidebar.appendChild(el);
+      });
+
+      document.getElementById('ov-chats').textContent = String(snap.size);
+      window.hasUnreadMessages = totalUnread > 0;
+    });
+  }
+
+  function selectConversation(clientUid) {
+    activeClientUid = clientUid;
+    window.activeClientUid = clientUid;
+    const c = conversationsMap.get(clientUid) || {};
+    const name = c.clientName || 'Client';
+    const initials = getInitials(name);
+
+    document.querySelectorAll('.chat-item').forEach((i) => {
+      i.classList.toggle('active', i.dataset.uid === clientUid);
+      if (i.dataset.uid === clientUid) i.querySelector('.chat-unread')?.remove();
+    });
+
+    document.getElementById('chat-name').textContent = name;
+    document.getElementById('chat-av').textContent = initials;
+    document.getElementById('chat-status').textContent = '';
+    document.getElementById('chat-input').disabled = false;
+
+    if (unsubMessages) unsubMessages();
+    unsubMessages = subscribeToMessages(clientUid, (snap) => {
+      const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderAdminMessages(document.getElementById('chat-messages'), messages);
+    });
+
+    markConversationRead(clientUid, 'admin');
+  }
+
+  window.selectConversation = selectConversation;
+
+  window.goToChat = function goToChat(name) {
+    switchTab('chat');
+    for (const [uid, c] of conversationsMap.entries()) {
+      if (c.clientName === name) {
+        selectConversation(uid);
+        return;
+      }
+    }
+  };
+
+  window.sendMessage = async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !activeClientUid) return;
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const c = conversationsMap.get(activeClientUid) || {};
+    input.disabled = true;
+    try {
+      await sendChatMessage(activeClientUid, {
+        text,
+        senderId: user.uid,
+        senderRole: 'admin',
+        senderName: 'Rensé',
+        clientName: c.clientName,
+        clientEmail: c.clientEmail
+      });
+      input.value = '';
+    } catch (err) {
+      console.error(err);
+      showToast('Could not send message. Please try again.');
+    } finally {
+      input.disabled = false;
+    }
+  };
+
+  document.getElementById('chat-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') window.sendMessage();
+  });
 </script>
 
 <script>
@@ -484,7 +604,8 @@
   }
 
   let hasUnreadMessages = false;
-  let activeChat = null;
+  window.hasUnreadMessages = false;
+  window.activeClientUid = null;
 
   // ── TABS ──
   function switchTab(name) {
@@ -496,7 +617,7 @@
       dot.style.display = 'none';
     } else {
       // Show if there are unread messages
-      if (hasUnreadMessages) {
+      if (window.hasUnreadMessages) {
         dot.style.display = 'flex';
       }
     }
@@ -544,56 +665,7 @@
   });
 
   // ── CHAT ──
-  function goToChat(name) {
-    switchTab('chat');
-    const items = document.querySelectorAll('.chat-item');
-    items.forEach(item => {
-      if (item.querySelector('.chat-item-name').textContent === name) {
-        item.click();
-      }
-    });
-  }
-
-  function openChat(name, initials, el) {
-    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-    el.classList.add('active');
-    const unread = el.querySelector('.chat-unread');
-    if (unread) unread.remove();
-    activeChat = name;
-    document.getElementById('chat-name').textContent = name;
-    document.getElementById('chat-av').textContent   = initials;
-    document.getElementById('chat-status').textContent = '';
-    document.getElementById('chat-input').disabled = false;
-    document.getElementById('chat-messages').innerHTML =
-      '<div class="chat-empty">No messages yet. Say hello to start the conversation.</div>';
-  }
-
-  function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const text  = input.value.trim();
-    if (!text || !activeChat) return;
-    const msgs  = document.getElementById('chat-messages');
-    const empty = msgs.querySelector('.chat-empty');
-    if (empty) empty.remove();
-    const now   = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
-    msgs.innerHTML += `
-      <div style="align-self:flex-end;">
-        <div class="msg-bubble me">
-          <div class="msg-sender" style="text-align:right;">Rensé</div>
-          ${text}
-        </div>
-        <div class="msg-time" style="text-align:right;">Today ${now}</div>
-      </div>`;
-    input.value = '';
-    msgs.scrollTop = msgs.scrollHeight;
-    // Update sidebar preview
-    const active = document.querySelector('.chat-item.active .chat-item-preview');
-    if (active) active.textContent = text;
-  }
-
-  document.getElementById('chat-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendMessage();
-  });
+  // goToChat and sendMessage are defined in the module script
 
   let wsActive = true;
   function toggleWebsite() {
