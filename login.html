@@ -3,47 +3,58 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sign In — Sites by Rensé</title>
+<title>Sign In — Rensé</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --black:#000; --white:#fff; --green:#2ecc71; --gray:#888; }
+  :root { --black:#000; --white:#fff; --green:#2ecc71; --gold:#C9B97A; --gray:#888; --dim:#222; }
   body { font-family: 'Georgia', Georgia, serif; background: var(--black); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
 
   .back { position: fixed; top: 1.4rem; left: 2rem; font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); text-decoration: none; transition: color 0.2s; }
   .back:hover { color: var(--white); }
 
-  .card { width: 100%; max-width: 420px; border: 1px solid #222; padding: 3rem 2.5rem; }
-  .card-title { font-size: 1.8rem; font-weight: 400; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
-  .card-sub { font-size: 0.85rem; color: var(--gray); font-style: italic; margin-bottom: 2.2rem; line-height: 1.5; }
+  .brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 2rem; text-align: center; }
+  .card { width: 100%; max-width: 420px; border: 1px solid var(--dim); padding: 3rem 2.5rem; }
+  .card-title { font-size: 1.8rem; font-weight: 400; margin-bottom: 0.4rem; }
+  .card-sub { font-size: 0.82rem; color: var(--gray); font-style: italic; margin-bottom: 2.5rem; line-height: 1.5; }
 
-  .tabs { display: flex; border-bottom: 1px solid #222; margin-bottom: 2rem; }
-  .tab { flex: 1; padding: 0.65rem; text-align: center; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+  .tabs { display: flex; border-bottom: 1px solid var(--dim); margin-bottom: 2rem; }
+  .tab { flex: 1; padding: 0.65rem; text-align: center; font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
   .tab.active { color: var(--white); border-bottom-color: var(--white); }
 
   .form-section { display: none; }
   .form-section.active { display: block; }
 
   .field { margin-bottom: 1.2rem; }
-  .field label { display: block; font-size: 0.68rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
-  .field input { width: 100%; background: transparent; border: 1px solid #2a2a2a; padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; transition: border-color 0.2s; }
+  .field label { display: block; font-size: 0.65rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
+  .field input { width: 100%; background: transparent; border: 1px solid var(--dim); padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; transition: border-color 0.2s; }
   .field input:focus { border-color: #555; }
   .field input::placeholder { color: #444; }
+  .field.error label { color: #e74c3c; }
+  .field.error input { border-color: #e74c3c; }
+  .field.error input:focus { border-color: #e74c3c; }
 
-  .btn-primary { width: 100%; padding: 0.95rem; background: var(--white); color: var(--black); border: none; font-family: 'Georgia', Georgia, serif; font-size: 0.78rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; margin-top: 0.4rem; }
-  .btn-primary:hover { background: var(--green); }
+  .password-rules { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .rule { font-size: 0.68rem; display: flex; align-items: center; gap: 0.5rem; color: #444; transition: color 0.2s; }
+  .rule.met { color: var(--green); }
+  .rule-dot { width: 6px; height: 6px; border-radius: 50%; background: #333; flex-shrink: 0; transition: background 0.2s; }
+  .rule.met .rule-dot { background: var(--green); }
 
-  .msg { font-size: 0.8rem; margin-top: 1.2rem; text-align: center; min-height: 1.2rem; }
-  .msg.error { color: #e74c3c; font-style: italic; }
-  .msg.success { color: var(--green); font-style: italic; }
+  .btn-primary { width: 100%; padding: 0.95rem; background: transparent; color: var(--white); border: 1px solid var(--white); font-family: 'Georgia', Georgia, serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; margin-top: 0.6rem; }
+  .btn-primary:hover { border-color: var(--gold); color: var(--gold); }
+
+  .msg { font-size: 0.78rem; margin-top: 1rem; text-align: center; min-height: 1rem; font-style: italic; }
+  .msg.error { color: #e74c3c; }
+  .msg.success { color: var(--green); }
 </style>
 </head>
 <body>
 
 <a href="index.html" class="back">← Back</a>
+<p class="brand">Rensé</p>
 
 <div class="card">
-  <h1 class="card-title">Welcome back.</h1>
-  <p class="card-sub">Sign in or create an account to manage your project.</p>
+  <h1 class="card-title">Welcome.</h1>
+  <p class="card-sub">Sign in or create your client account.</p>
 
   <div class="tabs">
     <div class="tab active" data-tab="signin">Sign In</div>
@@ -51,88 +62,176 @@
   </div>
 
   <!-- SIGN IN -->
-  <div class="form-section active" id="tab-signin">
-    <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="your@email.com"/></div>
-    <div class="field"><label>Password</label><input type="password" id="si-pass" placeholder="••••••••"/></div>
-    <button class="btn-primary" id="btn-signin">Sign In</button>
+  <form class="form-section active" id="login-form" novalidate>
+    <div class="field"><label for="si-email">Email</label><input type="text" id="si-email" name="email" placeholder="your@email.com" autocomplete="email" inputmode="email"/></div>
+    <div class="field"><label for="si-pass">Password</label><input type="password" id="si-pass" name="password" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button type="submit" class="btn-primary">Sign In</button>
     <p class="msg" id="si-msg"></p>
-  </div>
+  </form>
 
   <!-- SIGN UP -->
-  <div class="form-section" id="tab-signup">
-    <div class="field"><label>Full Name</label><input type="text" id="su-name" placeholder="Your full name"/></div>
-    <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="your@email.com"/></div>
-    <div class="field"><label>Phone Number</label><input type="tel" id="su-phone" placeholder="+1 000 000 0000"/></div>
-    <div class="field"><label>Password</label><input type="password" id="su-pass" placeholder="At least 6 characters"/></div>
-    <button class="btn-primary" id="btn-signup">Create Account</button>
+  <form class="form-section" id="signup-form" novalidate>
+    <div class="field"><label for="su-name">Full Name</label><input type="text" id="su-name" name="name" placeholder="Your full name"/></div>
+    <div class="field"><label for="su-email">Email</label><input type="text" id="su-email" name="email" placeholder="your@email.com" autocomplete="email" inputmode="email"/></div>
+    <div class="field"><label for="su-phone">Phone Number</label><input type="tel" id="su-phone" name="phone" placeholder="Your phone number"/></div>
+    <div class="field">
+      <label for="su-pass">Password</label>
+      <input type="password" id="su-pass" name="password" placeholder="Min. 8 characters"/>
+      <div class="password-rules">
+        <div class="rule" id="rule-length"><div class="rule-dot"></div>At least 8 characters</div>
+        <div class="rule" id="rule-upper"><div class="rule-dot"></div>At least 1 capital letter</div>
+        <div class="rule" id="rule-special"><div class="rule-dot"></div>At least 1 special character (!@#$%...)</div>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" id="btn-signup">Create Account</button>
     <p class="msg" id="su-msg"></p>
-  </div>
+  </form>
 </div>
 
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { auth, db } from './firebase-config.js';
+  import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { isAdminUser, ADMIN_EMAILS } from './js/auth-helpers.js';
 
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-
-  // Redirect if already logged in
-  onAuthStateChanged(auth, (user) => {
-    if (user) window.location.href = 'profile.html';
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    const dest = (await isAdminUser(user)) ? 'admin.html' : 'profile.html';
+    if (!window.location.pathname.endsWith(dest)) window.location.href = dest;
   });
 
-  // Tabs
+  const tabForms = { signin: 'login-form', signup: 'signup-form' };
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab, .form-section').forEach(el => el.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      document.getElementById(tabForms[tab.dataset.tab]).classList.add('active');
     });
   });
 
-  // Sign In
-  document.getElementById('btn-signin').addEventListener('click', async () => {
+  function toggleRule(id, met) {
+    document.getElementById(id).classList.toggle('met', met);
+  }
+  function passwordValid(v) {
+    return v.length >= 8 && /[A-Z]/.test(v) && /[^a-zA-Z0-9]/.test(v);
+  }
+
+  function emailValid(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  function clearFieldErrors(form) {
+    form.querySelectorAll('.field.error').forEach(f => f.classList.remove('error'));
+  }
+
+  function setFieldError(inputId) {
+    document.getElementById(inputId).closest('.field').classList.add('error');
+  }
+
+  ['login-form', 'signup-form'].forEach(formId => {
+    document.getElementById(formId).querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => input.closest('.field')?.classList.remove('error'));
+    });
+  });
+
+  document.getElementById('su-pass').addEventListener('input', (e) => {
+    const v = e.target.value;
+    toggleRule('rule-length', v.length >= 8);
+    toggleRule('rule-upper', /[A-Z]/.test(v));
+    toggleRule('rule-special', /[^a-zA-Z0-9]/.test(v));
+  });
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = document.getElementById('login-form');
+    const msg = document.getElementById('si-msg');
+    clearFieldErrors(form);
+    msg.className = 'msg';
+    msg.textContent = '';
+
     const email = document.getElementById('si-email').value.trim();
-    const pass  = document.getElementById('si-pass').value;
-    const msg   = document.getElementById('si-msg');
-    msg.className = 'msg'; msg.textContent = '';
+    const password = document.getElementById('si-pass').value;
+
+    if (!email) {
+      setFieldError('si-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Please enter your email.';
+      return;
+    }
+    if (!password) {
+      setFieldError('si-pass');
+      msg.className = 'msg error';
+      msg.textContent = 'Please enter your password.';
+      return;
+    }
+
+    if (!emailValid(email)) {
+      setFieldError('si-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Please enter a valid email address.';
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      window.location.href = 'profile.html';
-    } catch(e) {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      window.location.href = (await isAdminUser(cred.user)) ? 'admin.html' : 'profile.html';
+    } catch {
       msg.className = 'msg error';
       msg.textContent = 'Invalid email or password.';
     }
   });
 
-  // Sign Up
   document.getElementById('btn-signup').addEventListener('click', async () => {
+    const form = document.getElementById('signup-form');
     const name  = document.getElementById('su-name').value.trim();
     const email = document.getElementById('su-email').value.trim();
     const phone = document.getElementById('su-phone').value.trim();
     const pass  = document.getElementById('su-pass').value;
     const msg   = document.getElementById('su-msg');
-    msg.className = 'msg'; msg.textContent = '';
-    if (!name || !email || !pass) { msg.className='msg error'; msg.textContent='Please fill in all required fields.'; return; }
+    clearFieldErrors(form);
+    msg.className = 'msg';
+    msg.textContent = '';
+
+    if (!name) {
+      setFieldError('su-name');
+      msg.className = 'msg error';
+      msg.textContent = 'Please fill in all required fields.';
+      return;
+    }
+    if (!email) {
+      setFieldError('su-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Please fill in all required fields.';
+      return;
+    }
+    if (!emailValid(email)) {
+      setFieldError('su-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    if (!passwordValid(pass)) {
+      setFieldError('su-pass');
+      msg.className = 'msg error';
+      msg.textContent = 'Password does not meet requirements.';
+      return;
+    }
+
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      const isAdmin = ADMIN_EMAILS.includes(email);
       await updateProfile(cred.user, { displayName: name });
-      await setDoc(doc(db, 'users', cred.user.uid), { name, email, phone, createdAt: new Date().toISOString() });
-      window.location.href = 'profile.html';
-    } catch(e) {
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        name, email, phone,
+        createdAt: new Date().toISOString(),
+        ...(isAdmin ? { role: 'admin' } : {})
+      });
+      window.location.href = isAdmin ? 'admin.html' : 'profile.html';
+    } catch (e) {
       msg.className = 'msg error';
-      msg.textContent = e.message.includes('email-already') ? 'That email is already registered.' : 'Something went wrong. Try again.';
+      msg.textContent = e.code === 'auth/email-already-in-use'
+        ? 'That email is already registered.'
+        : 'Something went wrong. Try again.';
     }
   });
 </script>

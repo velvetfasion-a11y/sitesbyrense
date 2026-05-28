@@ -123,13 +123,42 @@
   .features-label { text-align: center; font-size: 0.75rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 2rem; }
   .features-grid {
     display: grid;
-    grid-template-columns: max-content max-content;
-    gap: 1.4rem clamp(2.5rem, 8vw, 5.5rem);
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: clamp(2.5rem, 9vw, 4.5rem);
+    row-gap: 1.4rem;
     width: fit-content;
+    max-width: 100%;
     margin: 0 auto;
+    padding-left: 0.65rem;
+    transform: translateX(0.35rem);
   }
-  .feature-item { display: flex; align-items: flex-start; gap: 0.85rem; font-size: clamp(0.9rem, 1.8vw, 1rem); line-height: 1.5; white-space: nowrap; }
-  .check { color: var(--green); flex-shrink: 0; margin-top: 2px; }
+  .features-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+  .feature-item { display: flex; align-items: center; gap: 0.85rem; font-size: clamp(0.9rem, 1.8vw, 1rem); line-height: 1.5; white-space: nowrap; }
+  .check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    border: 1px solid #333;
+    color: #444;
+    font-size: 0.58rem;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.45s ease, border-color 0.45s ease, transform 0.45s ease;
+    transform: scale(0.85);
+  }
+  .feature-item.revealed .check {
+    color: var(--green);
+    border-color: var(--green);
+    transform: scale(1);
+  }
 
   /* RECOMMENDATIONS */
   #recommendations { padding: 2.5rem 1.5rem; background: var(--black); }
@@ -152,7 +181,7 @@
   .rec-stars {
     font-size: 0.48rem;
     letter-spacing: 0.18em;
-    color: var(--white);
+    color: #f5c518;
     margin-bottom: 0.75rem;
   }
   .rec-avatar {
@@ -228,8 +257,14 @@
 
   @media (max-width: 560px) {
     .modal { padding: 2rem 1.5rem; }
-    .feature-item { font-size: 0.85rem; white-space: normal; }
-    .features-grid { grid-template-columns: 1fr; gap: 1.2rem; }
+    .features-grid {
+      column-gap: 1.75rem;
+      padding-left: 0.5rem;
+      transform: translateX(0.25rem);
+    }
+    .features-col { gap: 1.1rem; }
+    .feature-item { font-size: 0.72rem; gap: 0.45rem; white-space: normal; }
+    .check { width: 1rem; height: 1rem; font-size: 0.5rem; }
     .rec-list { gap: 0.65rem; max-width: 100%; }
     .rec-stars { font-size: 0.42rem; margin-bottom: 0.55rem; }
     .rec-avatar { width: 32px; height: 32px; }
@@ -259,7 +294,7 @@
 <nav>
   <span id="nav-user-name"></span>
   <a href="login.html" id="nav-login">Sign In</a>
-  <a href="profile.html" id="nav-profile" style="display:none">My Profile</a>
+  <a href="profile.html" id="nav-profile" style="display:none">Profile</a>
   <a href="#" id="nav-logout" style="display:none">Sign Out</a>
 </nav>
 
@@ -270,7 +305,7 @@
   </div>
   <div class="hero-content">
     <h1 class="hero-headline">Launch your website.</h1>
-    <button class="btn-cta" id="openModal">Contact Now</button>
+    <button class="btn-cta" id="heroContactBtn">Contact Now</button>
   </div>
 </section>
 
@@ -278,40 +313,25 @@
 <section id="features">
   <p class="features-label">What you get</p>
   <div class="features-grid">
-    <div class="feature-item"><span class="check">✓</span><span>Custom Made</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>SEO Optimized</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Mobile Friendly</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Secure Hosting</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Personal Admin Panel</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Free Revisions</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Fast Delivery</span></div>
-    <div class="feature-item"><span class="check">✓</span><span>Ongoing Support</span></div>
+    <div class="features-col">
+      <div class="feature-item"><span class="check">✓</span><span>Custom Made</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Mobile Friendly</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Personal Admin Panel</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Fast Delivery</span></div>
+    </div>
+    <div class="features-col">
+      <div class="feature-item"><span class="check">✓</span><span>SEO Optimized</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Secure Hosting</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Free Revisions</span></div>
+      <div class="feature-item"><span class="check">✓</span><span>Ongoing Support</span></div>
+    </div>
   </div>
 </section>
 
 <!-- RECOMMENDATIONS -->
 <section id="recommendations">
   <p class="rec-label">Some of our clients</p>
-  <div class="rec-list">
-    <article class="rec-card">
-      <p class="rec-stars">★★★★★</p>
-      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=47" alt="" width="40" height="40" /></div>
-      <p class="rec-name">Sarah Chen</p>
-      <p class="rec-text">Launched my studio site in under two weeks. Clean, fast, and exactly the look I wanted.</p>
-    </article>
-    <article class="rec-card">
-      <p class="rec-stars">★★★★★</p>
-      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=12" alt="" width="40" height="40" /></div>
-      <p class="rec-name">Marcus Webb</p>
-      <p class="rec-text">Professional from start to finish. My portfolio finally feels like me — and bookings went up.</p>
-    </article>
-    <article class="rec-card">
-      <p class="rec-stars">★★★★★</p>
-      <div class="rec-avatar"><img src="https://i.pravatar.cc/80?img=32" alt="" width="40" height="40" /></div>
-      <p class="rec-name">Elena Ruiz</p>
-      <p class="rec-text">Simple process, beautiful result. The admin panel makes updating my site effortless.</p>
-    </article>
-  </div>
+  <p style="text-align:center;color:var(--gray);font-style:italic;font-size:0.9rem;padding:2rem 0 3rem;">Client stories coming soon.</p>
 </section>
 
 <!-- CONTACT SECTION -->
@@ -319,24 +339,26 @@
   <p class="contact-label">Get in touch</p>
   <h2 class="contact-heading">Tell us about your website.</h2>
   <div class="contact-form">
+    <form id="contactForm" onsubmit="return false;">
     <div class="contact-field">
       <label for="c-name">Name</label>
-      <input type="text" id="c-name" placeholder="Your full name" />
+      <input type="text" id="c-name" name="name" placeholder="Your full name" />
     </div>
     <div class="contact-field">
       <label for="c-desc">Describe your website</label>
-      <textarea id="c-desc" rows="4" placeholder="What kind of website do you have in mind?"></textarea>
+      <textarea id="c-desc" name="message" rows="4" placeholder="What kind of website do you have in mind?"></textarea>
     </div>
     <div class="contact-field">
       <label for="c-phone">Phone Number</label>
-      <input type="tel" id="c-phone" placeholder="+1 000 000 0000" />
+      <input type="tel" id="c-phone" name="phone" placeholder="Your phone number" />
     </div>
     <div class="contact-field">
       <label for="c-email">Email</label>
-      <input type="email" id="c-email" placeholder="your@email.com" />
+      <input type="email" id="c-email" name="email" placeholder="your@email.com" />
     </div>
-    <button class="contact-submit" id="contactSubmit">Send Message</button>
+    <button type="button" class="contact-submit" id="contactSubmit">Send Message</button>
     <p class="contact-success" id="contactSuccess"></p>
+    </form>
   </div>
 </section>
 
@@ -365,19 +387,19 @@
       <p class="modal-sub">Fill in the details below and we'll be in touch shortly.</p>
       <div class="modal-field">
         <label for="f-name">Name</label>
-        <input type="text" id="f-name" placeholder="Your full name" />
+        <input type="text" id="f-name" name="name" placeholder="Your full name" />
       </div>
       <div class="modal-field">
         <label for="f-desc">Website Description</label>
-        <textarea id="f-desc" rows="3" placeholder="What kind of website do you want?"></textarea>
+        <textarea id="f-desc" name="message" rows="3" placeholder="What kind of website do you want?"></textarea>
       </div>
       <div class="modal-field">
         <label for="f-email">Email</label>
-        <input type="email" id="f-email" placeholder="your@email.com" />
+        <input type="email" id="f-email" name="email" placeholder="your@email.com" />
       </div>
       <div class="modal-field">
         <label for="f-phone">Phone Number</label>
-        <input type="tel" id="f-phone" placeholder="+1 000 000 0000" />
+        <input type="tel" id="f-phone" name="phone" placeholder="Your phone number" />
       </div>
       <button class="modal-submit" id="submitModal">Send Message</button>
     </div>
@@ -388,8 +410,65 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script>
+  const EMAILJS = {
+    publicKey: 'lBJNIF_P_AhM914Ub',
+    serviceId: 'YOUR_SERVICE_ID',
+    customerTemplate: 'template_3t5tsvl',
+    ownerTemplate: 'template_y2kqq9i'
+  };
+
+  emailjs.init(EMAILJS.publicKey);
+
+  function getContactFields(prefix) {
+    return {
+      name: document.getElementById(prefix + '-name').value.trim(),
+      email: document.getElementById(prefix + '-email').value.trim(),
+      phone: document.getElementById(prefix + '-phone').value.trim(),
+      message: document.getElementById(prefix + '-desc').value.trim()
+    };
+  }
+
+  function buildEmailParams(fields) {
+    return {
+      name: fields.name,
+      from_name: fields.name,
+      email: fields.email,
+      reply_to: fields.email,
+      phone: fields.phone,
+      message: fields.message,
+      description: fields.message,
+      to_email: fields.email,
+      to_name: fields.name
+    };
+  }
+
+  async function sendContactMessage(fields) {
+    if (!EMAILJS.serviceId || EMAILJS.serviceId === 'YOUR_SERVICE_ID') {
+      throw new Error('EmailJS service ID is not configured yet.');
+    }
+
+    const params = buildEmailParams(fields);
+
+    await emailjs.send(EMAILJS.serviceId, EMAILJS.ownerTemplate, params);
+    await emailjs.send(EMAILJS.serviceId, EMAILJS.customerTemplate, params);
+  }
+
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Features — stagger checkmarks top to bottom
+  const featureItems = document.querySelectorAll('.feature-item');
+  const featuresObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      featureItems.forEach((item, i) => {
+        setTimeout(() => item.classList.add('revealed'), i * 220);
+      });
+      featuresObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.35 });
+  featuresObserver.observe(document.getElementById('features'));
 
   const heroBgVideo = document.getElementById('hero-bg-video');
   heroBgVideo.play().catch(() => {
@@ -398,46 +477,80 @@
 
   // CTA fades in after the headline animation finishes (0.4s delay + 2s duration = 2.4s)
   setTimeout(() => {
-    document.getElementById('openModal').classList.add('visible');
+    document.getElementById('heroContactBtn').classList.add('visible');
   }, 2600);
+
+  document.getElementById('heroContactBtn').addEventListener('click', () => {
+    document.getElementById('contact').scrollIntoView({ behavior: 'smooth' });
+  });
 
   // Modal
   const overlay    = document.getElementById('modal-overlay');
   const formWrap   = document.getElementById('modal-form-wrap');
   const successMsg = document.getElementById('modal-success');
 
-  document.getElementById('openModal').addEventListener('click', () => {
-    overlay.classList.add('open');
-  });
   document.getElementById('closeModal').addEventListener('click', () => overlay.classList.remove('open'));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
 
-  document.getElementById('submitModal').addEventListener('click', () => {
-    const name  = document.getElementById('f-name').value.trim();
-    const email = document.getElementById('f-email').value.trim();
-    if (!name || !email) return;
-    formWrap.style.display = 'none';
-    successMsg.style.display = 'block';
-    setTimeout(() => {
-      overlay.classList.remove('open');
+  document.getElementById('submitModal').addEventListener('click', async () => {
+    const fields = getContactFields('f');
+    if (!fields.name || !fields.email) return;
+
+    const btn = document.getElementById('submitModal');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      await sendContactMessage(fields);
+      formWrap.style.display = 'none';
+      successMsg.style.display = 'block';
       setTimeout(() => {
-        formWrap.style.display = 'block';
-        successMsg.style.display = 'none';
-        ['f-name','f-email','f-desc','f-phone'].forEach(id => document.getElementById(id).value = '');
-      }, 400);
-    }, 2800);
+        overlay.classList.remove('open');
+        setTimeout(() => {
+          formWrap.style.display = 'block';
+          successMsg.style.display = 'none';
+          ['f-name','f-email','f-desc','f-phone'].forEach(id => document.getElementById(id).value = '');
+        }, 400);
+      }, 2800);
+    } catch (e) {
+      console.error(e);
+      alert('Could not send your message. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
   });
 
   // Inline contact form
-  document.getElementById('contactSubmit').addEventListener('click', () => {
-    const name  = document.getElementById('c-name').value.trim();
-    const email = document.getElementById('c-email').value.trim();
+  document.getElementById('contactSubmit').addEventListener('click', async () => {
+    const fields = getContactFields('c');
     const msg   = document.getElementById('contactSuccess');
-    if (!name || !email) { msg.style.color='#e74c3c'; msg.textContent='Please enter your name and email.'; return; }
-    msg.style.color = '#2ecc71';
-    msg.textContent = 'Thank you — we will be in touch shortly.';
-    ['c-name','c-desc','c-phone','c-email'].forEach(id => document.getElementById(id).value = '');
-    setTimeout(() => msg.textContent = '', 4000);
+    const btn   = document.getElementById('contactSubmit');
+
+    if (!fields.name || !fields.email) {
+      msg.style.color = '#e74c3c';
+      msg.textContent = 'Please enter your name and email.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    msg.textContent = '';
+
+    try {
+      await sendContactMessage(fields);
+      msg.style.color = '#2ecc71';
+      msg.textContent = 'Thank you — we will be in touch shortly.';
+      ['c-name','c-desc','c-phone','c-email'].forEach(id => document.getElementById(id).value = '');
+      setTimeout(() => msg.textContent = '', 4000);
+    } catch (e) {
+      console.error(e);
+      msg.style.color = '#e74c3c';
+      msg.textContent = 'Could not send your message. Please try again.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
   });
 
   // Subscribe
@@ -455,26 +568,59 @@
   });
 </script>
 
-<!-- Uncomment and paste your Firebase config when ready
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  const firebaseConfig = { apiKey:"YOUR_KEY", authDomain:"YOUR_DOMAIN", projectId:"YOUR_ID", storageBucket:"YOUR_BUCKET", messagingSenderId:"YOUR_SENDER", appId:"YOUR_APP" };
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      document.getElementById('nav-login').style.display = 'none';
-      document.getElementById('nav-profile').style.display = 'inline';
-      document.getElementById('nav-logout').style.display = 'inline';
-      document.getElementById('nav-user-name').textContent = user.displayName || user.email;
+  import { auth } from './js/firebase-config.js';
+  import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { isAdminUser } from './js/auth-helpers.js';
+
+  const navLogin = document.getElementById('nav-login');
+  const navProfile = document.getElementById('nav-profile');
+  const navLogout = document.getElementById('nav-logout');
+  const navUserName = document.getElementById('nav-user-name');
+
+  function setNavLoggedOut() {
+    navLogin.style.display = 'inline';
+    navProfile.style.display = 'none';
+    navLogout.style.display = 'none';
+    navUserName.textContent = '';
+  }
+
+  function setNavAdmin() {
+    navLogin.style.display = 'none';
+    navProfile.style.display = 'inline';
+    navProfile.textContent = 'Admin';
+    navProfile.href = 'admin.html';
+    navLogout.style.display = 'inline';
+    navUserName.textContent = '';
+  }
+
+  function setNavClient(user) {
+    navLogin.style.display = 'none';
+    navProfile.style.display = 'inline';
+    navProfile.textContent = 'Profile';
+    navProfile.href = 'profile.html';
+    navLogout.style.display = 'inline';
+    navUserName.textContent = user.displayName || user.email;
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      setNavLoggedOut();
+      return;
+    }
+    if (await isAdminUser(user)) {
+      setNavAdmin();
+    } else {
+      setNavClient(user);
     }
   });
-  document.getElementById('nav-logout').addEventListener('click', (e) => { e.preventDefault(); signOut(auth); });
+
+  navLogout.addEventListener('click', (e) => {
+    e.preventDefault();
+    signOut(auth);
+    setNavLoggedOut();
+  });
 </script>
--->
 
 </body>
 </html>
