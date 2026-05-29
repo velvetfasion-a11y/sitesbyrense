@@ -14,8 +14,29 @@
   .topbar { position: sticky; top: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #080808; border-bottom: 1px solid var(--dim); }
   .topbar-brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); text-decoration: none; }
   .topbar-name { font-size: 0.72rem; letter-spacing: 0.18em; color: var(--white); }
-  .btn-signout { background: transparent; border: 1px solid var(--dim); color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 0.85rem; width: 100%; transition: all 0.2s; margin-top: 2.5rem; }
-  .btn-signout:hover { border-color: #e74c3c; color: #e74c3c; }
+  .settings-page-wrap { min-height: calc(100vh - 8rem); display: flex; flex-direction: column; }
+  .sub-page-wrap { min-height: calc(100vh - 8rem); display: flex; flex-direction: column; }
+  .settings-footer { margin-top: auto; padding-top: 2.5rem; }
+  .btn-delete-account {
+    background: none; border: none; padding: 0;
+    font-family: 'Georgia', Georgia, serif;
+    font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #666; cursor: pointer; transition: color 0.2s;
+  }
+  .btn-delete-account:hover { color: #e74c3c; }
+  .btn-signout {
+    background: none; border: none; padding: 0;
+    font-family: 'Georgia', Georgia, serif;
+    font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #666; cursor: pointer; transition: color 0.2s, opacity 0.2s;
+    opacity: 0.55;
+  }
+  .btn-signout:hover { color: #e74c3c; opacity: 1; }
+
+  .delete-warning { font-size: 0.82rem; color: var(--gray); font-style: italic; line-height: 1.65; margin-bottom: 1.5rem; }
+  .btn-danger:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-danger:disabled:hover { background: transparent; color: #e74c3c; }
+  .delete-msg { font-size: 0.78rem; margin-top: 0.8rem; font-style: italic; min-height: 1rem; }
 
   .back-btn { display: none; align-items: center; gap: 0.5rem; background: transparent; border: none; color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; padding: 0; margin-bottom: 1.8rem; transition: color 0.2s; }
   .back-btn:hover { color: var(--white); }
@@ -80,7 +101,7 @@
   .ws-step-icon.done   { background: var(--green); color: var(--black); }
   .ws-step-icon.active { background: var(--gold);  color: var(--black); }
   .ws-step-icon.todo   { background: var(--dim);   color: var(--gray); }
-  .ws-step-text.done   { color: var(--gray); text-decoration: line-through; }
+  .ws-step-text.done   { color: var(--green); }
   .ws-step-text.active { color: var(--white); }
   .ws-step-text.todo   { color: #555; }
 
@@ -168,7 +189,6 @@
           <div class="card-num">›</div>
         </div>
       </div>
-      <button class="btn-signout" id="btn-signout">Sign Out</button>
     </div>
 
     <div class="page" id="page-chat">
@@ -199,13 +219,7 @@
           <span class="ws-url" id="ws-url" style="color:var(--gray);font-style:italic;">Not set up yet</span>
           <span class="ws-badge inactive" id="ws-badge">—</span>
         </div>
-        <div class="ws-steps" id="ws-steps">
-          <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-text todo">Initial consultation</span></div>
-          <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-text todo">Design approved</span></div>
-          <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-text todo">Development in progress</span></div>
-          <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-text todo">Client review</span></div>
-          <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-text todo">Launch</span></div>
-        </div>
+        <div class="ws-steps" id="ws-steps"></div>
       </div>
 
       <div class="updates-section">
@@ -217,39 +231,46 @@
     </div>
 
     <div class="page" id="page-settings">
-      <button class="back-btn show" onclick="showPage('overview')">← Back</button>
-      <p class="settings-title">Settings</p>
-      <h2 class="settings-headline">My Account</h2>
+      <button class="back-btn show" id="settings-back-btn" onclick="settingsBack()">← Back</button>
+      <div class="settings-page-wrap">
+        <div class="settings-main">
+          <p class="settings-title">Settings</p>
+          <h2 class="settings-headline">My Account</h2>
 
-      <div class="settings-list">
-        <div class="settings-row" onclick="showSub('profile')">
-          <div class="settings-row-left"><span class="settings-icon">👤</span><span class="settings-text">Profile</span></div>
-          <span class="settings-arrow">›</span>
+          <div class="settings-list">
+            <div class="settings-row" onclick="showSub('profile')">
+              <div class="settings-row-left"><span class="settings-icon">👤</span><span class="settings-text">Profile</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+            <div class="settings-row" onclick="showSub('subscription')">
+              <div class="settings-row-left"><span class="settings-icon">💳</span><span class="settings-text">Subscription</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+            <div class="settings-row" onclick="showSub('password')">
+              <div class="settings-row-left"><span class="settings-icon">🔒</span><span class="settings-text">Change Password</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+            <div class="settings-row" onclick="showSub('contact')">
+              <div class="settings-row-left"><span class="settings-icon">📞</span><span class="settings-text">Contact &amp; Support</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+            <div class="settings-row" onclick="showSub('help')">
+              <div class="settings-row-left"><span class="settings-icon">❓</span><span class="settings-text">Help</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+            <div class="settings-row" onclick="showSub('tos')">
+              <div class="settings-row-left"><span class="settings-icon">📄</span><span class="settings-text">Terms of Service</span></div>
+              <span class="settings-arrow">›</span>
+            </div>
+          </div>
         </div>
-        <div class="settings-row" onclick="showSub('subscription')">
-          <div class="settings-row-left"><span class="settings-icon">💳</span><span class="settings-text">Subscription</span></div>
-          <span class="settings-arrow">›</span>
-        </div>
-        <div class="settings-row" onclick="showSub('password')">
-          <div class="settings-row-left"><span class="settings-icon">🔒</span><span class="settings-text">Change Password</span></div>
-          <span class="settings-arrow">›</span>
-        </div>
-        <div class="settings-row" onclick="showSub('contact')">
-          <div class="settings-row-left"><span class="settings-icon">📞</span><span class="settings-text">Contact &amp; Support</span></div>
-          <span class="settings-arrow">›</span>
-        </div>
-        <div class="settings-row" onclick="showSub('help')">
-          <div class="settings-row-left"><span class="settings-icon">❓</span><span class="settings-text">Help</span></div>
-          <span class="settings-arrow">›</span>
-        </div>
-        <div class="settings-row" onclick="showSub('tos')">
-          <div class="settings-row-left"><span class="settings-icon">📄</span><span class="settings-text">Terms of Service</span></div>
-          <span class="settings-arrow">›</span>
+
+        <div class="settings-footer">
+          <button type="button" class="btn-signout" id="btn-signout">Sign out</button>
         </div>
       </div>
 
       <div class="sub-page" id="sub-profile">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
         <p class="settings-title">Profile</p>
         <div class="field"><label>Full Name</label><input type="text" id="prof-name" placeholder="Your name"/></div>
         <div class="field"><label>Email</label><input type="email" id="prof-email" readonly/></div>
@@ -258,7 +279,6 @@
       </div>
 
       <div class="sub-page" id="sub-subscription">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
         <p class="settings-title">Subscription</p>
         <div class="sub-card">
           <p class="sub-plan">Yearly Plan</p>
@@ -271,7 +291,6 @@
       </div>
 
       <div class="sub-page" id="sub-password">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
         <p class="settings-title">Change Password</p>
         <div class="field"><label>Current Password</label><input type="password" id="pw-current" placeholder="••••••••"/></div>
         <div class="field"><label>New Password</label><input type="password" id="pw-new" placeholder="Min. 8 chars, 1 capital, 1 special"/></div>
@@ -281,7 +300,6 @@
       </div>
 
       <div class="sub-page" id="sub-contact">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
         <p class="settings-title">Contact &amp; Support</p>
         <div onclick="showPage('chat');hideSub();" class="contact-block">
           <span class="contact-block-icon">💬</span>
@@ -295,24 +313,29 @@
       </div>
 
       <div class="sub-page" id="sub-help">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
-        <p class="settings-title">Help</p>
-        <div class="update-item" style="margin-bottom:1rem;">
-          <p class="update-date">How do I update my website?</p>
-          <p class="update-text">Send a message in your chat with Rensé and describe the changes you'd like.</p>
-        </div>
-        <div class="update-item" style="margin-bottom:1rem;">
-          <p class="update-date">How do I pay my subscription?</p>
-          <p class="update-text">You'll receive a payment link via email before your renewal date. You can also pay in advance under Settings → Subscription.</p>
-        </div>
-        <div class="update-item">
-          <p class="update-date">How do I cancel?</p>
-          <p class="update-text">You can cancel anytime under Settings → Subscription. Your access continues until the end of your billing period.</p>
+        <div class="sub-page-wrap">
+          <div>
+            <p class="settings-title">Help</p>
+            <div class="update-item" style="margin-bottom:1rem;">
+              <p class="update-date">How do I update my website?</p>
+              <p class="update-text">Send a message in your chat with Rensé and describe the changes you'd like.</p>
+            </div>
+            <div class="update-item" style="margin-bottom:1rem;">
+              <p class="update-date">How do I pay my subscription?</p>
+              <p class="update-text">You'll receive a payment link via email before your renewal date. You can also pay in advance under Settings → Subscription.</p>
+            </div>
+            <div class="update-item">
+              <p class="update-date">How do I cancel?</p>
+              <p class="update-text">You can cancel anytime under Settings → Subscription. Your access continues until the end of your billing period.</p>
+            </div>
+          </div>
+          <div class="settings-footer">
+            <button type="button" class="btn-delete-account" onclick="showSub('delete')">Delete account</button>
+          </div>
         </div>
       </div>
 
       <div class="sub-page" id="sub-tos">
-        <button class="back-btn show" onclick="hideSub()">← Back</button>
         <p class="settings-title">Terms of Service</p>
         <div class="tos-text">
           <p style="margin-bottom:1rem;">By using Rensé's client services, you agree to these terms. Services are provided on a yearly subscription basis at $49 per year.</p>
@@ -320,6 +343,15 @@
           <p style="margin-bottom:1rem;">Rensé retains the right to pause or terminate services in cases of non-payment or violation of these terms.</p>
           <p>For questions, contact hello@rense.se or use the in-app chat.</p>
         </div>
+      </div>
+
+      <div class="sub-page" id="sub-delete">
+        <p class="settings-title">Delete Account</p>
+        <p class="delete-warning">This permanently deletes your account and profile data. This cannot be undone.</p>
+        <div class="field"><label for="delete-password">Password</label><input type="password" id="delete-password" placeholder="Enter your password" autocomplete="current-password"/></div>
+        <div class="field"><label for="delete-confirm-input">Type delete to confirm</label><input type="text" id="delete-confirm-input" placeholder="delete" autocomplete="off"/></div>
+        <button type="button" class="btn-danger" id="btn-confirm-delete" disabled>Delete</button>
+        <p class="delete-msg" id="delete-msg"></p>
       </div>
 
     </div>
@@ -332,22 +364,91 @@
   import { auth, db } from './firebase-config.js';
   import {
     onAuthStateChanged, signOut, updateProfile,
-    updatePassword, reauthenticateWithCredential, EmailAuthProvider
+    updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser
   } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { isAdminUser } from './js/auth-helpers.js';
+  import { doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { isAdminUser, isEmailVerified } from './js/auth-helpers.js';
   import {
     subscribeToMessages, subscribeToConversation, sendChatMessage,
     markConversationRead, renderClientMessages
   } from './js/chat-service.js';
+  import { ensureUserProfile, deleteUserData } from './js/user-service.js';
+  import { renderWebsiteSteps } from './js/website-stages.js';
 
   let currentUser = null;
   let clientDisplayName = '';
   let unsubChatMessages = null;
   let unsubChatMeta = null;
+  let unsubUserDoc = null;
+
+  function setWsUrlElement(text, href) {
+    let urlEl = document.getElementById('ws-url');
+    if (!urlEl) return;
+    if (href) {
+      if (urlEl.tagName === 'SPAN') {
+        const a = document.createElement('a');
+        a.className = 'ws-url';
+        a.id = 'ws-url';
+        a.href = href;
+        a.textContent = text;
+        urlEl.replaceWith(a);
+      } else {
+        urlEl.textContent = text;
+        urlEl.href = href;
+        urlEl.style.color = '';
+        urlEl.style.fontStyle = '';
+      }
+    } else if (urlEl.tagName === 'A') {
+      const span = document.createElement('span');
+      span.className = 'ws-url';
+      span.id = 'ws-url';
+      span.style.color = 'var(--gray)';
+      span.style.fontStyle = 'italic';
+      span.textContent = text;
+      urlEl.replaceWith(span);
+    } else {
+      urlEl.textContent = text;
+      urlEl.style.color = 'var(--gray)';
+      urlEl.style.fontStyle = 'italic';
+    }
+  }
+
+  function updateWebsiteUI(data) {
+    const isClient = data.isClient === true;
+    const hasWebsite = !!data.websiteUrl;
+    const isActive = hasWebsite && data.websiteActive !== false;
+    const stage = Number.isInteger(data.websiteStage) ? data.websiteStage : -1;
+
+    if (!isClient) {
+      setWsUrlElement('Not set up yet');
+      document.getElementById('ws-badge').className = 'ws-badge inactive';
+      document.getElementById('ws-badge').textContent = '—';
+      document.getElementById('ws-card-status').className = 'card-status inactive';
+      document.getElementById('ws-card-status').textContent = '—';
+      renderWebsiteSteps(document.getElementById('ws-steps'), -1, { labelClass: 'ws-step-text' });
+      return;
+    }
+
+    if (hasWebsite) {
+      const clean = String(data.websiteUrl).replace(/^https?:\/\//, '');
+      setWsUrlElement(clean, 'https://' + clean);
+    } else {
+      setWsUrlElement('Not set up yet');
+    }
+
+    document.getElementById('ws-badge').className = 'ws-badge ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
+    document.getElementById('ws-badge').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : '—';
+    document.getElementById('ws-card-status').className = 'card-status ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
+    document.getElementById('ws-card-status').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : 'In progress';
+    renderWebsiteSteps(document.getElementById('ws-steps'), stage, { labelClass: 'ws-step-text' });
+  }
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    if (!(await isEmailVerified(user))) {
       window.location.href = 'login.html';
       return;
     }
@@ -363,39 +464,29 @@
     const data = snap.exists() ? snap.data() : {};
     const name = user.displayName || data.name || user.email.split('@')[0];
 
+    await ensureUserProfile(user.uid, {
+      name,
+      email: user.email,
+      phone: data.phone || ''
+    });
+
     document.getElementById('topbar-name').textContent = name;
     document.getElementById('greeting-name').textContent = 'Welcome, ' + name + '.';
     document.getElementById('prof-name').value = name;
     document.getElementById('prof-email').value = user.email;
     document.getElementById('prof-phone').value = data.phone || '';
 
-    if (data.websiteUrl) {
-      const clean = data.websiteUrl.replace(/^https?:\/\//, '');
-      const href = 'https://' + clean;
-      let urlEl = document.getElementById('ws-url');
-      if (urlEl.tagName === 'SPAN') {
-        const a = document.createElement('a');
-        a.className = 'ws-url';
-        a.id = 'ws-url';
-        a.href = href;
-        a.textContent = clean;
-        urlEl.replaceWith(a);
-      } else {
-        urlEl.textContent = clean;
-        urlEl.href = href;
-      }
-    }
-
-    const hasWebsite = !!data.websiteUrl;
-    const isActive = hasWebsite && data.websiteActive !== false;
-    document.getElementById('ws-badge').className = 'ws-badge ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
-    document.getElementById('ws-badge').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : '—';
-    document.getElementById('ws-card-status').className = 'card-status ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
-    document.getElementById('ws-card-status').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : '—';
+    updateWebsiteUI(data);
 
     if (data.renewDate) {
       document.getElementById('sub-renew').textContent = '🔄 Renews ' + data.renewDate;
     }
+
+    if (unsubUserDoc) unsubUserDoc();
+    unsubUserDoc = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      const live = docSnap.exists() ? docSnap.data() : {};
+      updateWebsiteUI(live);
+    });
 
     startClientChat(user, name);
   });
@@ -459,8 +550,48 @@
   };
 
   document.getElementById('btn-signout').addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to sign out?')) return;
     await signOut(auth);
     window.location.href = 'login.html';
+  });
+
+  const deleteConfirmInput = document.getElementById('delete-confirm-input');
+  const deleteBtn = document.getElementById('btn-confirm-delete');
+  const deleteMsg = document.getElementById('delete-msg');
+
+  deleteConfirmInput.addEventListener('input', () => {
+    deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() !== 'delete';
+  });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!currentUser) return;
+    const password = document.getElementById('delete-password').value;
+    if (deleteConfirmInput.value.trim().toLowerCase() !== 'delete') return;
+
+    if (!password) {
+      deleteMsg.style.color = '#e74c3c';
+      deleteMsg.textContent = 'Please enter your password.';
+      return;
+    }
+
+    deleteBtn.disabled = true;
+    deleteMsg.style.color = '';
+    deleteMsg.textContent = 'Deleting account…';
+
+    try {
+      const cred = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, cred);
+      await deleteUserData(currentUser.uid);
+      await deleteUser(currentUser);
+      window.location.href = 'login.html';
+    } catch (err) {
+      console.error(err);
+      deleteMsg.style.color = '#e74c3c';
+      deleteMsg.textContent = err.code === 'auth/wrong-password'
+        ? 'Password is incorrect.'
+        : 'Could not delete account. Please try again.';
+      deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() !== 'delete';
+    }
   });
 
   document.getElementById('btn-save-profile').addEventListener('click', async () => {
@@ -514,21 +645,37 @@
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
+    if (name === 'settings') hideSub();
     window.clientChatVisible = name === 'chat';
     if (name === 'chat' && window.markClientChatRead) window.markClientChatRead();
     window.scrollTo(0, 0);
   }
 
+  function settingsBack() {
+    if (document.querySelector('.sub-page.active')) {
+      hideSub();
+    } else {
+      showPage('overview');
+    }
+  }
+
   function showSub(name) {
     document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.settings-list, .settings-title, .settings-headline').forEach(el => el.style.display = 'none');
+    document.querySelector('.settings-page-wrap').style.display = 'none';
     document.getElementById('sub-' + name).classList.add('active');
+    if (name === 'delete') {
+      document.getElementById('delete-confirm-input').value = '';
+      document.getElementById('delete-password').value = '';
+      document.getElementById('delete-msg').textContent = '';
+      document.getElementById('btn-confirm-delete').disabled = true;
+    }
     window.scrollTo(0, 0);
   }
 
   function hideSub() {
     document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.settings-list, .settings-title, .settings-headline').forEach(el => el.style.display = '');
+    document.querySelector('.settings-page-wrap').style.display = 'flex';
+    window.scrollTo(0, 0);
   }
 
   function confirmCancel() {

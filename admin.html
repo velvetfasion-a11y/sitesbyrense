@@ -193,6 +193,14 @@
   .profile-name { font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 400; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
   .profile-email { font-size: 0.78rem; color: var(--gray); }
   .profile-actions { display: flex; gap: 0.7rem; margin-top: 0.8rem; flex-wrap: wrap; }
+  .profile-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--dim); }
+  .btn-remove-user {
+    background: none; border: none; padding: 0;
+    font-family: 'Georgia', Georgia, serif;
+    font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #555; cursor: pointer; transition: color 0.2s; opacity: 0.7;
+  }
+  .btn-remove-user:hover { color: #e74c3c; opacity: 1; }
 
   .profile-section { margin-bottom: 2rem; }
   .profile-section-title { font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--dim); }
@@ -214,9 +222,16 @@
   .ws-step-icon.active { background: var(--gold);  color: var(--black); }
   .ws-step-icon.todo  { background: var(--dim);   color: var(--gray); }
   .ws-step-label { flex: 1; }
-  .ws-step-label.done  { color: var(--gray); text-decoration: line-through; }
+  .ws-step-label.done  { color: var(--green); }
   .ws-step-label.active { color: var(--white); }
   .ws-step-label.todo  { color: #444; }
+  .ws-step-selectable { cursor: pointer; border-radius: 6px; padding: 0.25rem 0.4rem; margin: -0.25rem -0.4rem; transition: background 0.15s; }
+  .ws-step-selectable:hover { background: #111; }
+  .ws-step-selectable.selected .ws-step-label { color: var(--white); font-weight: normal; }
+  .client-toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1rem; border: 1px solid var(--dim); border-radius: 8px; margin-bottom: 1rem; }
+  .client-toggle-label { font-size: 0.85rem; }
+  .row-client-toggle { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+  .row-client-toggle span { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray); }
 
   .field textarea { width: 100%; background: transparent; border: 1px solid var(--dim); padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; resize: vertical; }
   .field textarea:focus { border-color: #555; }
@@ -367,7 +382,7 @@
 
     <!-- ── CLIENT PROFILE ── -->
     <div class="page" id="page-profile">
-      <button class="back-btn visible" onclick="switchTab(profileReturnTab)">← Back</button>
+      <button class="back-btn visible" onclick="switchTab(window.profileReturnTab || 'overview')">← Back</button>
       <div class="profile-hero">
         <div class="profile-avatar-lg" id="prof-avatar">—
           <div class="unread-dot" id="prof-unread-dot" style="display:none;">0</div>
@@ -376,7 +391,7 @@
           <div class="profile-name" id="prof-name">—</div>
           <div class="profile-email" id="prof-email">—</div>
           <div class="profile-actions">
-            <button class="btn-sm btn-gold" onclick="goToChat(document.getElementById('prof-name').textContent)">💬 Message</button>
+            <button class="btn-sm btn-gold" onclick="goToChat()">💬 Message</button>
             <button class="btn-sm btn-outline" onclick="confirmSend(document.getElementById('prof-email').textContent, document.getElementById('prof-name').textContent)">📧 Send Invoice</button>
           </div>
         </div>
@@ -393,10 +408,27 @@
       </div>
 
       <div class="profile-section">
+        <p class="profile-section-title">Client Status</p>
+        <div class="client-toggle-row">
+          <span class="client-toggle-label">Is a client</span>
+          <div style="display:flex;align-items:center;gap:0.8rem;">
+            <span class="toggle-label" id="client-toggle-label">No</span>
+            <div class="ws-toggle" id="client-toggle" onclick="toggleClientStatus()">
+              <div class="ws-toggle-thumb" id="client-thumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-section" id="prof-website-section">
         <p class="profile-section-title">🌐 Website Status</p>
         <div class="website-status-card">
+          <div class="field" style="margin-bottom:1rem;">
+            <label style="display:block;font-size:0.58rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gray);margin-bottom:0.35rem;">Website URL</label>
+            <input type="text" id="prof-website-input" placeholder="example.com" style="width:100%;background:transparent;border:1px solid var(--dim);padding:0.6rem 0.8rem;font-family:'Georgia',Georgia,serif;font-size:0.88rem;color:var(--white);outline:none;"/>
+          </div>
           <div class="ws-header">
-            <p class="ws-url" id="prof-website">—</p>
+            <p style="font-size:0.72rem;color:var(--gray);font-style:italic;">Click a stage to update progress</p>
             <div style="display:flex;align-items:center;gap:0.8rem;">
               <span class="toggle-label" id="toggle-label">Active</span>
               <div class="ws-toggle" id="ws-toggle" onclick="toggleWebsite()">
@@ -404,13 +436,7 @@
               </div>
             </div>
           </div>
-          <div class="ws-steps" id="prof-ws-steps">
-            <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-label todo">Initial consultation</span></div>
-            <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-label todo">Design approved</span></div>
-            <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-label todo">Development in progress</span></div>
-            <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-label todo">Client review</span></div>
-            <div class="ws-step"><div class="ws-step-icon todo">○</div><span class="ws-step-label todo">Launch</span></div>
-          </div>
+          <div class="ws-steps" id="prof-ws-steps"></div>
         </div>
       </div>
 
@@ -421,6 +447,10 @@
         </div>
         <button class="btn-sm btn-gold" onclick="sendUpdate()">Send to Client</button>
         <p id="update-confirm" style="font-size:0.75rem;color:var(--green);font-style:italic;margin-top:0.6rem;min-height:1rem;"></p>
+      </div>
+
+      <div class="profile-footer">
+        <button type="button" class="btn-remove-user" onclick="removeAdminUser()">Remove user</button>
       </div>
     </div>
 
@@ -448,24 +478,40 @@
 <script type="module">
   import { auth, db } from './firebase-config.js';
   import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { isAdminUser, ADMIN_EMAILS } from './js/auth-helpers.js';
+  import { collection, doc, getDoc, onSnapshot, updateDoc, deleteDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { isAdminUser, ADMIN_EMAILS, isEmailVerified } from './js/auth-helpers.js';
   import {
     subscribeToConversations, subscribeToMessages, sendChatMessage,
     markConversationRead, renderAdminMessages, getInitials, escapeHtml
   } from './js/chat-service.js';
+  import { renderWebsiteSteps, WEBSITE_STAGES } from './js/website-stages.js';
+  import { deleteConversationData, deleteUserData } from './js/user-service.js';
 
   let activeClientUid = null;
+  let activeProfileUid = null;
   let unsubConversations = null;
   let unsubMessages = null;
   let unsubUsers = null;
+  let unsubProfileUser = null;
   const conversationsMap = new Map();
+  const usersMap = new Map();
+  let lastConversationsSnap = null;
+  const collectionUsers = new Map();
+  const purgingUids = new Set();
+  let usersListLoaded = false;
+  let mergeInProgress = false;
+
+  function isAdminAccount(data) {
+    return data?.role === 'admin' || ADMIN_EMAILS.includes(data?.email);
+  }
 
   function isRegisteredAccount(data) {
-    if (!data) return false;
-    if (data.role === 'admin' || ADMIN_EMAILS.includes(data.email)) return false;
-    if (data.subscriptionStatus === 'active') return false;
-    return true;
+    return data && !isAdminAccount(data) && data.deleted !== true;
+  }
+
+  function isClientUser(data) {
+    if (!data || isAdminAccount(data) || data.deleted === true) return false;
+    return data.isClient === true;
   }
 
   function formatJoined(iso) {
@@ -475,77 +521,502 @@
     return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   }
 
-  function startAdminAccounts() {
-    if (unsubUsers) unsubUsers();
-    unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
-      const accounts = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter(isRegisteredAccount)
-        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  function stageLabel(data) {
+    const idx = data?.websiteStage;
+    if (!Number.isInteger(idx) || idx < 0 || idx >= WEBSITE_STAGES.length) return 'No stage set';
+    return WEBSITE_STAGES[idx];
+  }
 
-      document.getElementById('ov-accounts').textContent = String(accounts.length);
-
-      const list = document.getElementById('accounts-list');
-      if (!accounts.length) {
-        list.innerHTML = '<p class="empty-state">No registered accounts yet.</p>';
-        return;
+  function syncToggle(tog, thumb, label, active, activeText, inactiveText) {
+    if (!tog || !thumb) return;
+    if (active) {
+      tog.style.background = '#2ecc71';
+      thumb.style.right = '3px';
+      thumb.style.left = 'auto';
+      if (label) {
+        label.textContent = activeText;
+        label.style.color = '#2ecc71';
       }
+    } else {
+      tog.style.background = '#333';
+      thumb.style.left = '3px';
+      thumb.style.right = 'auto';
+      if (label) {
+        label.textContent = inactiveText;
+        label.style.color = '#888';
+      }
+    }
+  }
 
-      list.innerHTML = accounts.map((u) => {
-        const name = u.name || 'Client';
-        const initials = getInitials(name);
+  function clientToggleHtml(uid, isClient) {
+    const on = isClient ? 'on' : '';
+    return `<div class="row-client-toggle">
+      <span>Client</span>
+      <div class="ws-toggle ${on}" data-client-toggle="${escapeHtml(uid)}" title="Toggle client status">
+        <div class="ws-toggle-thumb"></div>
+      </div>
+    </div>`;
+  }
+
+  function bindClientToggles(container) {
+    container.querySelectorAll('[data-client-toggle]').forEach((tog) => {
+      const uid = tog.dataset.clientToggle;
+      const data = usersMap.get(uid) || {};
+      syncToggle(tog, tog.querySelector('.ws-toggle-thumb'), null, data.isClient === true, '', '');
+      tog.onclick = async (e) => {
+        e.stopPropagation();
+        const user = usersMap.get(uid) || {};
+        const next = !(user.isClient === true);
+        try {
+          await updateDoc(doc(db, 'users', uid), { isClient: next });
+          if (window.showToast) {
+            window.showToast(next ? 'Marked as client ✓' : 'Removed client status');
+          }
+        } catch (err) {
+          console.error(err);
+          if (window.showToast) window.showToast('Could not update client status.');
+        }
+      };
+    });
+  }
+
+  async function saveWebsiteUrl(uid, raw) {
+    const trimmed = raw.trim().replace(/^https?:\/\//, '');
+    await updateDoc(doc(db, 'users', uid), { websiteUrl: trimmed || null });
+  }
+
+  function renderAdminProfile(uid, data) {
+    usersMap.set(uid, data);
+    const name = data.name || 'Client';
+    const initials = getInitials(name);
+    const email = data.email || '—';
+    const phone = data.phone || '—';
+    const since = formatJoined(data.createdAt);
+    const isClient = data.isClient === true;
+    const hasWebsite = !!data.websiteUrl;
+    const websiteActive = data.websiteActive !== false;
+
+    const avatar = document.getElementById('prof-avatar');
+    if (avatar) avatar.childNodes[0].textContent = initials;
+    document.getElementById('prof-name').textContent = name;
+    document.getElementById('prof-email').textContent = email;
+    document.getElementById('prof-email2').textContent = email;
+    document.getElementById('prof-phone').textContent = phone;
+    document.getElementById('prof-since').textContent = since;
+    document.getElementById('prof-status').textContent = isClient ? 'Client' : 'Registered';
+
+    const websiteSection = document.getElementById('prof-website-section');
+    if (websiteSection) websiteSection.style.display = isClient ? 'block' : 'none';
+
+    syncToggle(
+      document.getElementById('client-toggle'),
+      document.getElementById('client-thumb'),
+      document.getElementById('client-toggle-label'),
+      isClient,
+      'Yes',
+      'No'
+    );
+
+    const urlInput = document.getElementById('prof-website-input');
+    if (urlInput && document.activeElement !== urlInput) {
+      urlInput.value = data.websiteUrl ? String(data.websiteUrl).replace(/^https?:\/\//, '') : '';
+    }
+
+    syncToggle(
+      document.getElementById('ws-toggle'),
+      document.getElementById('ws-thumb'),
+      document.getElementById('toggle-label'),
+      hasWebsite && websiteActive,
+      'Active',
+      'Inactive'
+    );
+
+    const stage = Number.isInteger(data.websiteStage) ? data.websiteStage : -1;
+    const stepsEl = document.getElementById('prof-ws-steps');
+    if (stepsEl) {
+      renderWebsiteSteps(stepsEl, stage, {
+        labelClass: 'ws-step-label',
+        selectable: true,
+        onSelect: async (idx) => {
+          try {
+            await updateDoc(doc(db, 'users', uid), { websiteStage: idx });
+            if (window.showToast) {
+              window.showToast(`Stage set to "${WEBSITE_STAGES[idx]}" ✓`);
+            }
+          } catch (err) {
+            console.error(err);
+            if (window.showToast) window.showToast('Could not update stage.');
+          }
+        }
+      });
+    }
+
+    const conv = conversationsMap.get(uid);
+    const dot = document.getElementById('prof-unread-dot');
+    if (dot) {
+      const unread = conv?.unreadByAdmin || 0;
+      dot.style.display = unread > 0 ? 'flex' : 'none';
+      dot.textContent = unread > 9 ? '9+' : String(unread);
+    }
+  }
+
+  window.openProfile = function openProfile(uid, returnTab) {
+    activeProfileUid = uid;
+    window.activeProfileUid = uid;
+    window.profileReturnTab = returnTab || window.profileReturnTab || 'clients';
+
+    const active = document.querySelector('.page.active');
+    if (active) window.profileReturnTab = active.id.replace('page-', '');
+
+    if (unsubProfileUser) unsubProfileUser();
+    unsubProfileUser = onSnapshot(doc(db, 'users', uid), (snap) => {
+      if (!snap.exists()) return;
+      renderAdminProfile(uid, snap.data());
+    }, (err) => console.error('Profile user error:', err));
+
+    switchTab('profile');
+  };
+
+  window.toggleClientStatus = async function toggleClientStatus() {
+    if (!activeProfileUid) return;
+    const data = usersMap.get(activeProfileUid) || {};
+    const next = !(data.isClient === true);
+    try {
+      await updateDoc(doc(db, 'users', activeProfileUid), { isClient: next });
+      if (window.showToast) {
+        window.showToast(next ? 'Marked as client ✓' : 'Removed client status');
+      }
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Could not update client status.');
+    }
+  };
+
+  window.removeAdminUser = async function removeAdminUser() {
+    if (!activeProfileUid) return;
+    const name = document.getElementById('prof-name')?.textContent || 'this user';
+    if (!confirm(`Remove ${name} and all their data? This cannot be undone.`)) return;
+    const uid = activeProfileUid;
+    try {
+      await deleteUserData(uid);
+      usersMap.delete(uid);
+      if (unsubProfileUser) unsubProfileUser();
+      activeProfileUid = null;
+      window.activeProfileUid = null;
+      if (window.showToast) window.showToast('User removed ✓');
+      refreshAdminUI();
+      switchTab(window.profileReturnTab || 'accounts');
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Could not remove user.');
+    }
+  };
+
+  window.toggleWebsite = async function toggleWebsite() {
+    if (!activeProfileUid) return;
+    const data = usersMap.get(activeProfileUid) || {};
+    const next = data.websiteActive === false;
+    try {
+      await updateDoc(doc(db, 'users', activeProfileUid), { websiteActive: next });
+      if (window.showToast) {
+        window.showToast('Website marked as ' + (next ? 'Active ✓' : 'Inactive'));
+      }
+    } catch (err) {
+      console.error(err);
+      if (window.showToast) window.showToast('Could not update website status.');
+    }
+  };
+
+  function refreshAdminUI() {
+    renderAdminUserLists();
+    renderChatSidebar();
+  }
+
+  function renderAdminUserLists() {
+    const allUsers = [...usersMap.values()].filter((u) => u?.id);
+
+    const accounts = allUsers
+      .filter(isRegisteredAccount)
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+    const clients = allUsers
+      .filter(isClientUser)
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+    document.getElementById('ov-accounts').textContent = String(accounts.length);
+    document.getElementById('ov-clients').textContent = String(clients.length);
+
+    const accountsList = document.getElementById('accounts-list');
+    if (!accounts.length) {
+      accountsList.innerHTML = usersListLoaded
+        ? '<p class="empty-state">No registered accounts yet.</p>'
+        : '<p class="empty-state">Loading accounts…</p>';
+    } else {
+      accountsList.innerHTML = accounts.map((u) => {
+        const name = u.name || 'Account';
         const email = u.email || '—';
-        const phone = u.phone || '—';
         const since = formatJoined(u.createdAt);
-        const safeName = escapeHtml(name);
-        const safeEmail = escapeHtml(email);
-        const safePhone = escapeHtml(phone);
+        const isClient = u.isClient === true;
         return `<div class="row-card">
           <div class="row-main">
-            <div class="row-avatar">${escapeHtml(initials)}</div>
+            <div class="row-avatar">${escapeHtml(getInitials(name))}</div>
             <div class="row-info">
-              <div class="row-name">${safeName}</div>
-              <div class="row-meta">${safeEmail} · Joined ${since}</div>
+              <div class="row-name">${escapeHtml(name)}</div>
+              <div class="row-meta">${escapeHtml(email)} · Joined ${since}</div>
             </div>
             <div class="row-actions">
-              <span class="pill pill-new">Registered</span>
-              <button type="button" class="btn-sm btn-outline" data-view-account="${escapeHtml(u.id)}">View</button>
+              ${clientToggleHtml(u.id, isClient)}
+              <span class="pill ${isClient ? 'pill-paid' : 'pill-new'}">${isClient ? 'Client' : 'Registered'}</span>
+              <button type="button" class="btn-sm btn-outline" data-view-user="${escapeHtml(u.id)}">View</button>
             </div>
           </div>
         </div>`;
       }).join('');
-
-      list.querySelectorAll('[data-view-account]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const u = accounts.find((a) => a.id === btn.dataset.viewAccount);
-          if (!u) return;
-          const name = u.name || 'Client';
-          openProfile(
-            name,
-            getInitials(name),
-            u.email || '—',
-            u.phone || '—',
-            formatJoined(u.createdAt),
-            '—',
-            'Registered',
-            false
-          );
-        });
+      bindClientToggles(accountsList);
+      accountsList.querySelectorAll('[data-view-user]').forEach((btn) => {
+        btn.addEventListener('click', () => window.openProfile(btn.dataset.viewUser, 'accounts'));
       });
-    }, (err) => {
-      console.error('Users error:', err);
+    }
+
+    const clientsList = document.getElementById('clients-list');
+    if (!clients.length) {
+      clientsList.innerHTML = '<p class="empty-state">No clients yet.</p>';
+    } else {
+      clientsList.innerHTML = clients.map((u) => {
+        const name = u.name || 'Client';
+        const email = u.email || '—';
+        const since = formatJoined(u.createdAt);
+        const stage = stageLabel(u);
+        const hasWebsite = !!u.websiteUrl;
+        const active = hasWebsite && u.websiteActive !== false;
+        const pill = active ? 'pill-paid' : (hasWebsite ? 'pill-due' : 'pill-new');
+        const pillText = active ? 'Active' : (hasWebsite ? 'Inactive' : 'In progress');
+        return `<div class="row-card">
+          <div class="row-main">
+            <div class="row-avatar">${escapeHtml(getInitials(name))}</div>
+            <div class="row-info">
+              <div class="row-name">${escapeHtml(name)}</div>
+              <div class="row-meta">${escapeHtml(email)} · ${escapeHtml(stage)}</div>
+            </div>
+            <div class="row-actions">
+              ${clientToggleHtml(u.id, true)}
+              <span class="pill ${pill}">${pillText}</span>
+              <button type="button" class="btn-sm btn-outline" data-view-user="${escapeHtml(u.id)}">View</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      bindClientToggles(clientsList);
+      clientsList.querySelectorAll('[data-view-user]').forEach((btn) => {
+        btn.addEventListener('click', () => window.openProfile(btn.dataset.viewUser, 'clients'));
+      });
+    }
+
+    if (activeProfileUid && !usersMap.has(activeProfileUid)) {
+      if (unsubProfileUser) unsubProfileUser();
+      activeProfileUid = null;
+      window.activeProfileUid = null;
+      if (document.getElementById('page-profile')?.classList.contains('active')) {
+        switchTab(window.profileReturnTab || 'overview');
+      }
+    } else if (activeProfileUid && usersMap.has(activeProfileUid)) {
+      renderAdminProfile(activeProfileUid, usersMap.get(activeProfileUid));
+    }
+  }
+
+  function syncUsersFromCollection(snap) {
+    collectionUsers.clear();
+    snap.docs.forEach((d) => {
+      collectionUsers.set(d.id, { id: d.id, ...d.data() });
     });
+    usersListLoaded = true;
+    mergeUsersAndRefresh();
+  }
+
+  async function mergeUsersAndRefresh() {
+    if (mergeInProgress) return;
+    mergeInProgress = true;
+    try {
+      usersMap.clear();
+      for (const [id, data] of collectionUsers) {
+        if (data.deleted !== true) usersMap.set(id, data);
+      }
+      await ensureKnownUsersFromConversations();
+      refreshAdminUI();
+      await purgeOrphanedConversations();
+    } finally {
+      mergeInProgress = false;
+    }
+  }
+
+  async function ensureKnownUsersFromConversations() {
+    if (!lastConversationsSnap) return;
+
+    for (const d of lastConversationsSnap.docs) {
+      const uid = d.id;
+      const convo = d.data();
+      if (convo.accountDeleted) continue;
+      if (usersMap.has(uid)) continue;
+
+      const userSnap = await getDoc(doc(db, 'users', uid));
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        if (data.deleted === true) continue;
+        usersMap.set(uid, { id: uid, ...data });
+        continue;
+      }
+
+      if (!convo.clientName && !convo.clientEmail) continue;
+
+      const profile = {
+        name: convo.clientName || 'Client',
+        email: convo.clientEmail || '',
+        createdAt: new Date().toISOString()
+      };
+      try {
+        await setDoc(doc(db, 'users', uid), profile, { merge: true });
+        usersMap.set(uid, { id: uid, ...profile });
+      } catch (err) {
+        console.error('Could not create profile for', uid, err);
+      }
+    }
+  }
+
+  async function purgeOrphanedConversations() {
+    if (!lastConversationsSnap) return;
+
+    for (const d of lastConversationsSnap.docs) {
+      const uid = d.id;
+      const convo = d.data();
+      if (purgingUids.has(uid)) continue;
+
+      const userSnap = await getDoc(doc(db, 'users', uid));
+      if (userSnap.exists()) {
+        if (!usersMap.has(uid)) {
+          usersMap.set(uid, { id: uid, ...userSnap.data() });
+          refreshAdminUI();
+        }
+        continue;
+      }
+
+      if (!convo.accountDeleted) continue;
+
+      purgingUids.add(uid);
+      try {
+        await deleteConversationData(uid);
+        try {
+          await deleteDoc(doc(db, 'users', uid));
+        } catch (_) {}
+        usersMap.delete(uid);
+      } catch (err) {
+        console.error('Could not purge deleted conversation:', uid, err);
+      } finally {
+        purgingUids.delete(uid);
+      }
+    }
+
+    refreshAdminUI();
+  }
+
+  function startAdminUsers() {
+    if (unsubUsers) unsubUsers();
+    unsubUsers = onSnapshot(collection(db, 'users'), syncUsersFromCollection, (err) => {
+      console.error('Users error:', err);
+      usersListLoaded = true;
+      if (window.showToast) window.showToast('Could not load accounts list. Check Firestore rules.');
+      mergeUsersAndRefresh();
+    });
+  }
+
+  function renderChatSidebar() {
+    const sidebar = document.getElementById('chat-sidebar');
+    conversationsMap.clear();
+
+    const docs = (lastConversationsSnap?.docs || []).filter((d) => {
+      if (d.data()?.accountDeleted) return false;
+      return usersMap.has(d.id);
+    });
+
+    if (!docs.length) {
+      sidebar.innerHTML = '<p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>';
+      const ovChats = document.getElementById('ov-chats');
+      ovChats.textContent = '0';
+      ovChats.classList.remove('has-unread');
+      document.getElementById('topbar-unread').style.display = 'none';
+      window.hasUnreadMessages = false;
+      if (activeClientUid && !usersMap.has(activeClientUid)) {
+        activeClientUid = null;
+        window.activeClientUid = null;
+      }
+      return;
+    }
+
+    let totalUnread = 0;
+    sidebar.innerHTML = '';
+    docs.forEach((d) => {
+      const c = d.data();
+      conversationsMap.set(d.id, c);
+      totalUnread += c.unreadByAdmin || 0;
+
+      const el = document.createElement('div');
+      el.className = 'chat-item' + (d.id === activeClientUid ? ' active' : '');
+      el.dataset.uid = d.id;
+      const unread = c.unreadByAdmin > 0 ? '<div class="chat-unread"></div>' : '';
+      el.innerHTML = `
+        <div class="chat-avatar">${escapeHtml(getInitials(c.clientName))}</div>
+        <div class="chat-item-info">
+          <div class="chat-item-name">${escapeHtml(c.clientName || 'Client')}</div>
+          <div class="chat-item-preview">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
+        </div>
+        ${unread}`;
+      el.addEventListener('click', () => selectConversation(d.id));
+      sidebar.appendChild(el);
+    });
+
+    if (activeClientUid && !usersMap.has(activeClientUid)) {
+      activeClientUid = null;
+      window.activeClientUid = null;
+    }
+
+    const ovChats = document.getElementById('ov-chats');
+    ovChats.textContent = String(totalUnread);
+    ovChats.classList.toggle('has-unread', totalUnread > 0);
+
+    const topbarDot = document.getElementById('topbar-unread');
+    const page = window.adminActivePage || 'overview';
+    const showTopbar = totalUnread > 0 && page !== 'overview' && page !== 'chat';
+    topbarDot.style.display = showTopbar ? 'flex' : 'none';
+    if (showTopbar) topbarDot.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
+    window.hasUnreadMessages = totalUnread > 0;
   }
 
   function showApp() {
     document.getElementById('app').style.display = 'block';
     initStats();
-    startAdminAccounts();
+    startAdminUsers();
     startAdminChat();
+
+    const urlInput = document.getElementById('prof-website-input');
+    if (urlInput) {
+      urlInput.addEventListener('change', async () => {
+        if (!activeProfileUid) return;
+        try {
+          await saveWebsiteUrl(activeProfileUid, urlInput.value);
+          if (window.showToast) window.showToast('Website URL saved ✓');
+        } catch (err) {
+          console.error(err);
+          if (window.showToast) window.showToast('Could not save website URL.');
+        }
+      });
+    }
   }
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    if (!(await isEmailVerified(user))) {
       window.location.href = 'login.html';
       return;
     }
@@ -564,55 +1035,8 @@
   function startAdminChat() {
     if (unsubConversations) unsubConversations();
     unsubConversations = subscribeToConversations((snap) => {
-      const sidebar = document.getElementById('chat-sidebar');
-      conversationsMap.clear();
-
-      if (snap.empty) {
-        sidebar.innerHTML = '<p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>';
-        const ovChats = document.getElementById('ov-chats');
-        ovChats.textContent = '0';
-        ovChats.classList.remove('has-unread');
-        document.getElementById('topbar-unread').style.display = 'none';
-        window.hasUnreadMessages = false;
-        return;
-      }
-
-      let totalUnread = 0;
-      sidebar.innerHTML = '';
-      snap.docs.forEach((d) => {
-        const c = d.data();
-        conversationsMap.set(d.id, c);
-        totalUnread += c.unreadByAdmin || 0;
-
-        const el = document.createElement('div');
-        el.className = 'chat-item' + (d.id === activeClientUid ? ' active' : '');
-        el.dataset.uid = d.id;
-        const unread = c.unreadByAdmin > 0 ? '<div class="chat-unread"></div>' : '';
-        el.innerHTML = `
-          <div class="chat-avatar">${escapeHtml(getInitials(c.clientName))}</div>
-          <div class="chat-item-info">
-            <div class="chat-item-name">${escapeHtml(c.clientName || 'Client')}</div>
-            <div class="chat-item-preview">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
-          </div>
-          ${unread}`;
-        el.addEventListener('click', () => selectConversation(d.id));
-        sidebar.appendChild(el);
-      });
-
-      const ovChats = document.getElementById('ov-chats');
-      ovChats.textContent = String(totalUnread);
-      ovChats.classList.toggle('has-unread', totalUnread > 0);
-
-      const topbarDot = document.getElementById('topbar-unread');
-      const page = window.adminActivePage || 'overview';
-      const showTopbar = totalUnread > 0 && page !== 'overview' && page !== 'chat';
-      if (showTopbar) {
-        topbarDot.style.display = 'flex';
-        topbarDot.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
-      } else {
-        topbarDot.style.display = 'none';
-      }
-      window.hasUnreadMessages = totalUnread > 0;
+      lastConversationsSnap = snap;
+      mergeUsersAndRefresh();
     });
   }
 
@@ -662,8 +1086,13 @@
 
   window.goToChat = function goToChat(name) {
     switchTab('chat');
+    if (activeProfileUid && conversationsMap.has(activeProfileUid)) {
+      selectConversation(activeProfileUid);
+      return;
+    }
+    const lookup = name || document.getElementById('prof-name')?.textContent;
     for (const [uid, c] of conversationsMap.entries()) {
-      if (c.clientName === name) {
+      if (c.clientName === lookup) {
         selectConversation(uid);
         return;
       }
@@ -737,24 +1166,7 @@
   // ── TOGGLE ROW ──
   function toggleRow(card) { card.classList.toggle('open'); }
 
-  let profileReturnTab = 'clients';
-
-  function openProfile(name, initials, email, phone, since, website, status, hasUnread) {
-    // Remember which tab we came from
-    const active = document.querySelector('.page.active');
-    if (active) profileReturnTab = active.id.replace('page-', '');
-    document.getElementById('prof-avatar').childNodes[0].textContent = initials;
-    document.getElementById('prof-name').textContent   = name;
-    document.getElementById('prof-email').textContent  = email;
-    document.getElementById('prof-email2').textContent = email;
-    document.getElementById('prof-phone').textContent  = phone;
-    document.getElementById('prof-since').textContent  = since;
-    document.getElementById('prof-website').textContent = website;
-    document.getElementById('prof-status').textContent = status;
-    const dot = document.getElementById('prof-unread-dot');
-    dot.style.display = hasUnread ? 'flex' : 'none';
-    switchTab('profile');
-  }
+  window.profileReturnTab = 'clients';
 
   // ── CONFIRM SEND ──
   let pendingEmail = '';
@@ -775,26 +1187,6 @@
   // ── CHAT ──
   // goToChat and sendMessage are defined in the module script
 
-  let wsActive = true;
-  function toggleWebsite() {
-    wsActive = !wsActive;
-    const tog = document.getElementById('ws-toggle');
-    const thumb = document.getElementById('ws-thumb');
-    const label = document.getElementById('toggle-label');
-    if (wsActive) {
-      tog.style.background = '#2ecc71';
-      thumb.style.right = '3px'; thumb.style.left = 'auto';
-      label.textContent = 'Active';
-      label.style.color = '#2ecc71';
-    } else {
-      tog.style.background = '#333';
-      thumb.style.left = '3px'; thumb.style.right = 'auto';
-      label.textContent = 'Inactive';
-      label.style.color = '#888';
-    }
-    showToast('Website marked as ' + (wsActive ? 'Active ✓' : 'Inactive'));
-  }
-
   function sendUpdate() {
     const msg = document.getElementById('update-msg').value.trim();
     const conf = document.getElementById('update-confirm');
@@ -811,6 +1203,7 @@
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3500);
   }
+  window.showToast = showToast;
 
   // Filter buttons (visual only)
   document.querySelectorAll('.filter-btn').forEach(btn => {

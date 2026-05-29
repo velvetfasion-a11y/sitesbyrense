@@ -18,7 +18,13 @@
   }
   nav a { font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); text-decoration: none; transition: color 0.2s; }
   nav a:hover { color: var(--white); }
-  #nav-user-name { font-size: 0.72rem; letter-spacing: 0.2em; color: var(--white); }
+  nav a.nav-profile-link {
+    text-transform: none;
+    letter-spacing: 0.04em;
+    color: var(--white);
+    font-style: italic;
+  }
+  nav a.nav-profile-link:hover { color: var(--green); }
 
   /* HERO */
   #hero {
@@ -292,10 +298,8 @@
 
 <!-- NAV -->
 <nav>
-  <span id="nav-user-name"></span>
   <a href="login.html" id="nav-login">Sign In</a>
-  <a href="profile.html" id="nav-profile" style="display:none">Profile</a>
-  <a href="#" id="nav-logout" style="display:none">Sign Out</a>
+  <a href="profile.html" id="nav-profile" class="nav-profile-link" style="display:none"></a>
 </nav>
 
 <!-- HERO -->
@@ -599,38 +603,68 @@
 </script>
 
 <script type="module">
-  import { auth } from './js/firebase-config.js';
-  import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { auth, db } from './js/firebase-config.js';
+  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { isAdminUser } from './js/auth-helpers.js';
 
   const navLogin = document.getElementById('nav-login');
   const navProfile = document.getElementById('nav-profile');
-  const navLogout = document.getElementById('nav-logout');
-  const navUserName = document.getElementById('nav-user-name');
+  const NAV_NAME_CACHE_KEY = 'rense_nav_display_names';
+
+  function getCachedDisplayName(uid) {
+    try {
+      const cache = JSON.parse(sessionStorage.getItem(NAV_NAME_CACHE_KEY) || '{}');
+      return cache[uid] || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setCachedDisplayName(uid, name) {
+    try {
+      const cache = JSON.parse(sessionStorage.getItem(NAV_NAME_CACHE_KEY) || '{}');
+      cache[uid] = name;
+      sessionStorage.setItem(NAV_NAME_CACHE_KEY, JSON.stringify(cache));
+    } catch (_) {}
+  }
+
+  async function getDisplayName(user) {
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists() && snap.data().name) return snap.data().name;
+    } catch (_) {}
+    if (user.displayName) return user.displayName;
+    return user.email?.split('@')[0] || 'Account';
+  }
+
+  function showNavProfile(name, href) {
+    navLogin.style.display = 'none';
+    navProfile.style.display = 'inline';
+    navProfile.href = href;
+    navProfile.textContent = name;
+  }
 
   function setNavLoggedOut() {
     navLogin.style.display = 'inline';
     navProfile.style.display = 'none';
-    navLogout.style.display = 'none';
-    navUserName.textContent = '';
   }
 
-  function setNavAdmin() {
-    navLogin.style.display = 'none';
-    navProfile.style.display = 'inline';
-    navProfile.textContent = 'Admin';
-    navProfile.href = 'admin.html';
-    navLogout.style.display = 'inline';
-    navUserName.textContent = '';
-  }
+  async function setNavForUser(user) {
+    const admin = await isAdminUser(user);
+    const verified = user.emailVerified || admin;
+    const cached = getCachedDisplayName(user.uid);
+    if (cached) showNavProfile(cached, verified ? (admin ? 'admin.html' : 'profile.html') : 'login.html');
 
-  function setNavClient(user) {
-    navLogin.style.display = 'none';
-    navProfile.style.display = 'inline';
-    navProfile.textContent = 'Profile';
-    navProfile.href = 'profile.html';
-    navLogout.style.display = 'inline';
-    navUserName.textContent = user.displayName || user.email;
+    const name = await getDisplayName(user);
+    setCachedDisplayName(user.uid, name);
+
+    if (!verified) {
+      showNavProfile(name, 'login.html');
+      return;
+    }
+
+    showNavProfile(name, admin ? 'admin.html' : 'profile.html');
   }
 
   onAuthStateChanged(auth, async (user) => {
@@ -638,18 +672,12 @@
       setNavLoggedOut();
       return;
     }
-    if (await isAdminUser(user)) {
-      setNavAdmin();
-    } else {
-      setNavClient(user);
-    }
+    await setNavForUser(user);
   });
 
-  navLogout.addEventListener('click', (e) => {
-    e.preventDefault();
-    signOut(auth);
-    setNavLoggedOut();
-  });
+  if (auth.currentUser) {
+    setNavForUser(auth.currentUser);
+  }
 </script>
 
 </body>

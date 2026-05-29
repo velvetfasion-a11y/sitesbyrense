@@ -45,6 +45,50 @@
   .msg { font-size: 0.78rem; margin-top: 1rem; text-align: center; min-height: 1rem; font-style: italic; }
   .msg.error { color: #e74c3c; }
   .msg.success { color: var(--green); }
+
+  .forgot-wrap { margin-top: 1.25rem; text-align: center; display: none; }
+  .forgot-wrap.visible { display: block; }
+  .forgot-link {
+    background: none; border: none; padding: 0;
+    font-family: 'Georgia', Georgia, serif;
+    font-size: 0.68rem; letter-spacing: 0.12em;
+    color: var(--gray); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 0.2em;
+    transition: color 0.2s;
+  }
+  .forgot-link:hover { color: var(--white); }
+  .forgot-link:disabled { opacity: 0.5; cursor: wait; }
+
+  .verify-panel { display: none; text-align: center; }
+  .verify-panel.active { display: block; }
+  .verify-icon { font-size: 2.2rem; margin-bottom: 1.2rem; opacity: 0.85; }
+  .verify-lead { font-size: 0.82rem; color: var(--gray); font-style: italic; line-height: 1.55; margin-bottom: 0.75rem; }
+  .verify-email { font-size: 0.92rem; color: var(--white); margin-bottom: 1.2rem; word-break: break-word; }
+  .verify-note { font-size: 0.75rem; color: var(--gray); font-style: italic; line-height: 1.5; margin-bottom: 0.75rem; }
+  .verify-help {
+    font-size: 0.72rem; color: #666; line-height: 1.55;
+    margin-bottom: 1.5rem; padding: 0.85rem 1rem;
+    border: 1px solid var(--dim); text-align: left;
+  }
+  .verify-help strong { color: var(--gray); font-weight: 400; }
+  .verify-help span { color: var(--white); word-break: break-all; }
+  .btn-secondary {
+    width: 100%; padding: 0.85rem; margin-top: 0.65rem;
+    background: transparent; color: var(--gray);
+    border: 1px solid var(--dim);
+    font-family: 'Georgia', Georgia, serif; font-size: 0.68rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--white); color: var(--white); }
+  .btn-secondary:disabled { opacity: 0.5; cursor: wait; }
+  .btn-text {
+    background: none; border: none; margin-top: 1.25rem;
+    font-family: 'Georgia', Georgia, serif; font-size: 0.62rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gray); cursor: pointer; transition: color 0.2s;
+  }
+  .btn-text:hover { color: #e74c3c; }
 </style>
 </head>
 <body>
@@ -67,6 +111,9 @@
     <div class="field"><label for="si-pass">Password</label><input type="password" id="si-pass" name="password" placeholder="••••••••" autocomplete="current-password"/></div>
     <button type="submit" class="btn-primary">Sign In</button>
     <p class="msg" id="si-msg"></p>
+    <p class="forgot-wrap" id="forgot-wrap">
+      <button type="button" class="forgot-link" id="forgot-password">Forgot password?</button>
+    </p>
   </form>
 
   <!-- SIGN UP -->
@@ -86,26 +133,143 @@
     <button type="button" class="btn-primary" id="btn-signup">Create Account</button>
     <p class="msg" id="su-msg"></p>
   </form>
+
+  <div class="verify-panel" id="verify-panel">
+    <div class="verify-icon">✉</div>
+    <p class="verify-lead">We sent a secure verification link to:</p>
+    <p class="verify-email" id="verify-email"></p>
+    <p class="verify-note">Open the email and click the link to activate your account. You can sign in once verified.</p>
+    <p class="verify-help">
+      <strong>Didn't get it?</strong> Check spam and junk — verification is sent by email only (not text), from
+      <span id="verify-sender">verification@rense.se</span>.
+      It can take a few minutes to arrive.
+    </p>
+    <button type="button" class="btn-primary" id="btn-check-verify">Remember to check spam folder</button>
+    <button type="button" class="btn-secondary" id="btn-resend-verify">Resend verification email</button>
+    <button type="button" class="btn-text" id="btn-signout-verify">Sign out</button>
+    <p class="msg" id="verify-msg"></p>
+  </div>
 </div>
 
 <script type="module">
   import { auth, db } from './firebase-config.js';
-  import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { isAdminUser, ADMIN_EMAILS } from './js/auth-helpers.js';
+  import { isAdminUser, ADMIN_EMAILS, sendUserVerificationEmail, isEmailVerified, completeEmailVerificationFromUrl, VERIFICATION_SENDER } from './js/auth-helpers.js';
+  import { ensureUserProfile } from './js/user-service.js';
+
+  document.getElementById('verify-sender').textContent = VERIFICATION_SENDER;
+
+  const cardTitle = document.querySelector('.card-title');
+  const cardSub = document.querySelector('.card-sub');
+  const tabsEl = document.querySelector('.tabs');
+  const verifyPanel = document.getElementById('verify-panel');
+  const verifyMsg = document.getElementById('verify-msg');
+
+  const VERIFY_PENDING_KEY = 'pendingSignupVerification';
+
+  function setPendingSignupVerification(on) {
+    if (on) sessionStorage.setItem(VERIFY_PENDING_KEY, 'true');
+    else sessionStorage.removeItem(VERIFY_PENDING_KEY);
+  }
+
+  function isPendingSignupVerification() {
+    return sessionStorage.getItem(VERIFY_PENDING_KEY) === 'true';
+  }
+
+  function showAuthForms() {
+    setPendingSignupVerification(false);
+    tabsEl.style.display = 'flex';
+    verifyPanel.classList.remove('active');
+    cardTitle.textContent = 'Welcome.';
+    cardSub.textContent = 'Sign in or create your client account.';
+    document.querySelector('.tab[data-tab="signin"]').classList.add('active');
+    document.querySelector('.tab[data-tab="signup"]').classList.remove('active');
+    document.getElementById('login-form').classList.add('active');
+    document.getElementById('signup-form').classList.remove('active');
+  }
+
+  function showVerifyPanel(email) {
+    tabsEl.style.display = 'none';
+    document.getElementById('login-form').classList.remove('active');
+    document.getElementById('signup-form').classList.remove('active');
+    verifyPanel.classList.add('active');
+    cardTitle.textContent = 'Verify your email.';
+    cardSub.textContent = 'One last step before you can access your account.';
+    document.getElementById('verify-email').textContent = email;
+    verifyMsg.className = 'msg';
+    verifyMsg.textContent = '';
+  }
+
+  async function redirectVerifiedUser(user) {
+    await ensureUserProfile(user.uid, {
+      name: user.displayName || user.email.split('@')[0],
+      email: user.email
+    });
+    const dest = (await isAdminUser(user)) ? 'admin.html' : 'profile.html';
+    window.location.href = dest;
+  }
+
+  let resendAvailableAt = 0;
+
+  async function handleVerificationReturnLink() {
+    try {
+      const user = await completeEmailVerificationFromUrl();
+      if (user?.emailVerified) {
+        setPendingSignupVerification(false);
+        verifyMsg.className = 'msg success';
+        verifyMsg.textContent = 'Email verified! Redirecting…';
+        await redirectVerifiedUser(user);
+      }
+    } catch (err) {
+      console.error(err);
+      if (isPendingSignupVerification()) {
+        showVerifyPanel(auth.currentUser?.email || '');
+        verifyMsg.className = 'msg error';
+        verifyMsg.textContent = 'That verification link expired. Tap resend below for a new one.';
+      }
+    }
+  }
+
+  handleVerificationReturnLink();
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) return;
-    const dest = (await isAdminUser(user)) ? 'admin.html' : 'profile.html';
-    if (!window.location.pathname.endsWith(dest)) window.location.href = dest;
+    if (!user) {
+      if (verifyPanel.classList.contains('active')) showAuthForms();
+      return;
+    }
+    if (await isEmailVerified(user)) {
+      setPendingSignupVerification(false);
+      if (window.location.pathname.endsWith('login.html')) {
+        await redirectVerifiedUser(user);
+      }
+      return;
+    }
+    if (isPendingSignupVerification()) {
+      showVerifyPanel(user.email);
+    } else {
+      await signOut(auth);
+    }
   });
 
   const tabForms = { signin: 'login-form', signup: 'signup-form' };
+  const forgotWrap = document.getElementById('forgot-wrap');
+  const forgotBtn = document.getElementById('forgot-password');
+
+  function showForgotPassword() {
+    forgotWrap.classList.add('visible');
+  }
+
+  function hideForgotPassword() {
+    forgotWrap.classList.remove('visible');
+  }
+
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab, .form-section').forEach(el => el.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(tabForms[tab.dataset.tab]).classList.add('active');
+      if (tab.dataset.tab !== 'signin') hideForgotPassword();
     });
   });
 
@@ -174,10 +338,59 @@
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      window.location.href = (await isAdminUser(cred.user)) ? 'admin.html' : 'profile.html';
+      hideForgotPassword();
+      if (!(await isEmailVerified(cred.user))) {
+        await signOut(auth);
+        msg.className = 'msg error';
+        msg.textContent = 'Please verify your email before signing in. Check your inbox and spam folder.';
+        return;
+      }
+      await redirectVerifiedUser(cred.user);
     } catch {
       msg.className = 'msg error';
       msg.textContent = 'Invalid email or password.';
+      showForgotPassword();
+    }
+  });
+
+  forgotBtn.addEventListener('click', async () => {
+    const msg = document.getElementById('si-msg');
+    const email = document.getElementById('si-email').value.trim();
+    clearFieldErrors(document.getElementById('login-form'));
+
+    if (!email) {
+      setFieldError('si-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Enter your email above, then try forgot password again.';
+      return;
+    }
+    if (!emailValid(email)) {
+      setFieldError('si-email');
+      msg.className = 'msg error';
+      msg.textContent = 'Please enter a valid email address.';
+      return;
+    }
+
+    forgotBtn.disabled = true;
+    msg.className = 'msg';
+    msg.textContent = 'Sending reset link…';
+
+    try {
+      await sendPasswordResetEmail(auth, email, {
+        url: new URL('login.html', window.location.href).href,
+        handleCodeInApp: false
+      });
+      msg.className = 'msg success';
+      msg.textContent = 'Check your email — we sent a link to reset your password.';
+    } catch (e) {
+      msg.className = 'msg error';
+      if (e.code === 'auth/too-many-requests') {
+        msg.textContent = 'Too many attempts. Please wait a few minutes and try again.';
+      } else {
+        msg.textContent = 'Could not send reset email. Please try again.';
+      }
+    } finally {
+      forgotBtn.disabled = false;
     }
   });
 
@@ -226,13 +439,74 @@
         createdAt: new Date().toISOString(),
         ...(isAdmin ? { role: 'admin' } : {})
       });
-      window.location.href = isAdmin ? 'admin.html' : 'profile.html';
+      await sendUserVerificationEmail(cred.user);
+      setPendingSignupVerification(true);
+      showVerifyPanel(email);
+      verifyMsg.className = 'msg success';
+      verifyMsg.textContent = `Verification email sent to ${email}. Check inbox and spam.`;
     } catch (e) {
+      console.error(e);
       msg.className = 'msg error';
       msg.textContent = e.code === 'auth/email-already-in-use'
         ? 'That email is already registered.'
         : 'Something went wrong. Try again.';
     }
+  });
+
+  document.getElementById('btn-resend-verify').addEventListener('click', async () => {
+    const user = auth.currentUser;
+    const btn = document.getElementById('btn-resend-verify');
+    if (!user) return;
+
+    const waitMs = resendAvailableAt - Date.now();
+    if (waitMs > 0) {
+      verifyMsg.className = 'msg error';
+      verifyMsg.textContent = `Please wait ${Math.ceil(waitMs / 1000)} seconds before resending.`;
+      return;
+    }
+
+    btn.disabled = true;
+    verifyMsg.className = 'msg';
+    verifyMsg.textContent = 'Sending…';
+
+    try {
+      await sendUserVerificationEmail(user);
+      resendAvailableAt = Date.now() + 60000;
+      verifyMsg.className = 'msg success';
+      verifyMsg.textContent = `Verification email sent to ${user.email}. Check inbox and spam.`;
+    } catch (e) {
+      console.error(e);
+      verifyMsg.className = 'msg error';
+      if (e.code === 'auth/too-many-requests') {
+        verifyMsg.textContent = 'Too many attempts. Wait a few minutes, then try again.';
+        resendAvailableAt = Date.now() + 180000;
+      } else {
+        verifyMsg.textContent = 'Could not send verification email. Please try again in a few minutes.';
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('btn-check-verify').addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    verifyMsg.className = 'msg';
+    verifyMsg.textContent = 'Checking…';
+
+    if (await isEmailVerified(user)) {
+      await redirectVerifiedUser(user);
+      return;
+    }
+
+    verifyMsg.className = 'msg error';
+    verifyMsg.textContent = 'Not verified yet — open the link in your email, then try again.';
+  });
+
+  document.getElementById('btn-signout-verify').addEventListener('click', async () => {
+    await signOut(auth);
+    showAuthForms();
   });
 </script>
 </body>

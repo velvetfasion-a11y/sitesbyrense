@@ -3,6 +3,7 @@ import {
   collection, doc, addDoc, setDoc, updateDoc, getDoc,
   onSnapshot, query, orderBy, serverTimestamp, increment
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { ensureUserProfile } from './user-service.js';
 
 export function getInitials(name) {
   if (!name) return '?';
@@ -29,6 +30,7 @@ export function formatMessageTime(timestamp) {
 }
 
 export async function ensureConversation(clientUid, { name, email }) {
+  await ensureUserProfile(clientUid, { name, email });
   const ref = doc(db, 'conversations', clientUid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {

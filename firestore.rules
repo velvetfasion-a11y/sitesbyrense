@@ -20,8 +20,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     match /messages/{messageId} {
@@ -33,6 +34,7 @@ service cloud.firestore {
       allow read: if isOwner(clientUid) || isAdmin();
       allow create: if isOwner(clientUid) || isAdmin();
       allow update: if isOwner(clientUid) || isAdmin();
+      allow delete: if isOwner(clientUid) || isAdmin();
 
       match /messages/{messageId} {
         allow read: if isOwner(clientUid) || isAdmin();
@@ -41,6 +43,7 @@ service cloud.firestore {
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 2000
           && request.resource.data.senderId == request.auth.uid;
+        allow delete: if isOwner(clientUid) || isAdmin();
       }
     }
   }
