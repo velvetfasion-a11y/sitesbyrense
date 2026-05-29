@@ -3,472 +3,769 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png"/>
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#000000"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Rensé"/>
+<meta name="application-name" content="Rensé"/>
 <title>Admin — Rensé</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --black:#000; --white:#fff; --green:#2ecc71; --gold:#C9B97A; --gray:#888; --dim:#222; --mid:#333; }
-  body { font-family: 'Georgia', Georgia, serif; background: var(--black); color: var(--white); min-height: 100vh; }
-
-  /* ── APP SHELL ── */
+  :root {
+    --gold: #c9a84c;
+    --gold-border: rgba(201,168,76,0.2);
+    --green: #22c55e;
+    --bg: #080808;
+    --white: #fff;
+    --font-ui: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+  }
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--white);
+    min-height: 100vh;
+  }
   #app { display: none; min-height: 100vh; }
 
-  /* ── TOPBAR ── */
-  .topbar {
-    position: sticky; top: 0; z-index: 200;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem 2rem; background: #080808; border-bottom: 1px solid var(--dim);
-  }
-  .topbar-brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); }
-  .topbar-right { display: flex; align-items: center; gap: 1rem; }
-  .gold-badge { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--gold); padding: 0.2rem 0.6rem; }
-  .btn-logout { background: transparent; border: 1px solid var(--dim); color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.85rem; width: 100%; cursor: pointer; transition: all 0.2s; margin-top: 2rem; }
-  .btn-logout:hover { border-color: #e74c3c; color: #e74c3c; }
-
-  /* ── BACK BUTTON ── */
-  .back-btn {
-    display: none; align-items: center; gap: 0.5rem;
-    background: transparent; border: none; color: var(--gray);
-    font-family: 'Georgia', Georgia, serif; font-size: 0.68rem;
-    letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer;
-    padding: 0; margin-bottom: 2rem; transition: color 0.2s;
-  }
-  .back-btn:hover { color: var(--white); }
-  .back-btn.visible { display: flex; }
-
-  /* ── CONTENT AREA ── */
-  .content { padding: 2rem 1.5rem 3rem; max-width: 900px; margin: 0 auto; }
-  .page { display: none; }
+  /* ── PAGE SHELL ── */
+  .page { display: none; min-height: 100vh; max-width: 430px; margin: 0 auto; padding-bottom: 60px; }
   .page.active { display: block; }
+  .page-chat.active { display: flex; flex-direction: column; height: 100vh; padding-bottom: 0; overflow: hidden; }
 
-  .page-header { margin-bottom: 2rem; }
-  .page-title { font-size: 0.68rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.5rem; }
-  .page-headline { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 400; letter-spacing: 0.04em; }
-
-  /* ── STAT CARDS ── */
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2.5rem; }
-  .stat {
-    background: transparent; border: 1px solid var(--dim);
-    border-radius: 12px; padding: 1.2rem 1.2rem 1rem;
-    text-align: left; display: flex; flex-direction: column;
-    cursor: pointer; position: relative;
-    transition: border-color 0.25s, transform 0.2s;
-    min-height: 130px;
+  /* ── NAV ── */
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 24px 0; }
+  .nav-brand { font-family: var(--font-serif); font-size: 16px; letter-spacing: 0.28em; color: var(--gold); text-decoration: none; }
+  .nav-badge {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    border: 1px solid var(--gold-border); border-radius: 4px;
+    padding: 3px 10px; color: rgba(201,168,76,0.45); position: relative;
   }
-  .stat:hover { border-color: var(--gold); transform: translateY(-2px); }
-  .stat-label { font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gray); margin-bottom: auto; }
-  .stat-icon { font-size: 2rem; flex: 1; display: flex; align-items: center; justify-content: center; }
-  .stat-bottom { display: flex; justify-content: flex-end; align-items: flex-end; margin-top: auto; }
-  .stat-num { font-size: 1.8rem; font-weight: 400; color: var(--gold); }
-  .stat-num.has-unread {
-    background: var(--white); color: var(--black);
-    border-radius: 50%; width: 38px; height: 38px;
+  .nav-badge-dot {
+    display: none; position: absolute; top: -6px; right: -6px;
+    width: 14px; height: 14px; border-radius: 50%; background: var(--white);
+    color: var(--bg); font-size: 8px; font-weight: 700;
+    align-items: center; justify-content: center; border: 2px solid var(--bg);
+  }
+  .hairline { margin: 14px 24px 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-border), transparent); }
+  .hairline-wide { margin: 24px 24px 0; }
+
+  /* ── BACK ── */
+  .back-btn {
+    background: none; border: none; color: rgba(255,255,255,0.3);
+    font-size: 13px; cursor: pointer; padding: 16px 24px 0;
+    display: flex; align-items: center; gap: 5px; font-family: var(--font-ui);
+    letter-spacing: 0.02em;
+  }
+  .back-btn:hover { color: rgba(255,255,255,0.5); }
+
+  /* ── TYPOGRAPHY ── */
+  .eyebrow { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.2); margin: 0 0 8px; text-transform: uppercase; }
+  .headline { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.5px; line-height: 1.2; font-family: var(--font-serif); }
+  .section-head { padding: 20px 24px 0; }
+  .section-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.2); margin: 0 0 10px 2px; }
+
+  /* ── DASHBOARD ── */
+  .dash-greeting { padding: 30px 24px 0; }
+  .stats-grid { padding: 24px 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-tile {
+    background: transparent; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px; padding: 22px 20px 20px; text-align: left;
+    cursor: pointer; font-family: var(--font-ui);
+    display: flex; flex-direction: column;
+  }
+  .stat-tile.active { border-color: var(--gold-border); }
+  .stat-tile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .stat-tile-label { font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.25); text-transform: uppercase; }
+  .stat-tile-icon { font-size: 18px; opacity: 0.35; }
+  .stat-tile.active .stat-tile-icon { opacity: 1; }
+  .stat-tile-num {
+    font-size: 44px; font-weight: 700; letter-spacing: -2px; line-height: 1;
+    color: rgba(255,255,255,0.12); font-family: var(--font-serif);
+  }
+  .stat-tile.active .stat-tile-num { color: var(--gold); }
+  .stat-tile-hint { font-size: 11px; color: rgba(201,168,76,0.5); margin-top: 12px; letter-spacing: 0.04em; }
+  .sign-out-btn {
+    background: transparent; border: none; color: rgba(255,255,255,0.15);
+    font-size: 12px; letter-spacing: 0.06em; cursor: pointer;
+    font-family: var(--font-ui); padding: 18px 24px 0;
+  }
+  .sign-out-btn:hover { color: rgba(255,255,255,0.3); }
+
+  /* ── USER LIST ── */
+  .user-list-wrap { padding: 24px 24px 0; display: flex; flex-direction: column; gap: 28px; }
+  .user-cards { display: flex; flex-direction: column; gap: 8px; }
+  .user-card {
+    background: transparent; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+  }
+  .user-card.is-client { border-color: rgba(201,168,76,0.15); }
+  .user-avatar {
+    width: 46px; height: 46px; border-radius: 13px; background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.07);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
+    font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.35);
+    flex-shrink: 0; letter-spacing: 0.05em;
   }
-
-  /* ── CARDS / ROWS ── */
-  .row-card { border: 1px solid var(--dim); margin-bottom: 1px; transition: border-color 0.2s; }
-  .row-card:hover { border-color: var(--mid); }
-  .row-main { display: flex; align-items: center; padding: 1.1rem 1.3rem; gap: 1rem; flex-wrap: wrap; }
-  .row-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--dim); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; color: var(--gray); }
-  .row-info { flex: 1; min-width: 160px; }
-  .row-name { font-size: 0.9rem; letter-spacing: 0.03em; margin-bottom: 0.15rem; }
-  .row-meta { font-size: 0.72rem; color: var(--gray); }
-  .row-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
-
-  /* ── BUTTONS ── */
-  .btn-icon { background: transparent; border: 1px solid var(--dim); color: var(--gray); padding: 0.45rem 0.7rem; cursor: pointer; font-size: 1rem; transition: all 0.2s; line-height: 1; }
-  .btn-icon:hover { border-color: var(--white); color: var(--white); }
-  .btn-icon.green:hover { border-color: var(--green); color: var(--green); }
-  .btn-icon.gold:hover  { border-color: var(--gold);  color: var(--gold); }
-  .btn-icon.red:hover   { border-color: #e74c3c; color: #e74c3c; }
-  .btn-sm { padding: 0.45rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
-  .btn-outline { background: transparent; border: 1px solid var(--mid); color: var(--gray); }
-  .btn-outline:hover { border-color: var(--white); color: var(--white); }
-  .btn-gold { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
-  .btn-gold:hover { background: var(--gold); color: var(--black); }
-  .btn-green { background: transparent; border: 1px solid var(--green); color: var(--green); }
-  .btn-green:hover { background: var(--green); color: var(--black); }
-
-  /* ── STATUS PILLS ── */
-  .pill { font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.18rem 0.55rem; border: 1px solid; }
-  .pill-paid    { color: var(--green); border-color: var(--green); }
-  .pill-due     { color: var(--gold);  border-color: var(--gold); }
-  .pill-overdue { color: #e74c3c; border-color: #e74c3c; }
-  .pill-new     { color: var(--gray);  border-color: var(--dim); }
-
-  /* ── EXPANDED ROW ── */
-  .row-detail { display: none; padding: 1rem 1.3rem 1.3rem; border-top: 1px solid var(--dim); background: #080808; }
-  .row-card.open .row-detail { display: block; }
-  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-  .detail-item .d-label { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.25rem; }
-  .detail-item .d-val { font-size: 0.85rem; color: var(--white); }
-  .detail-item .d-val a { color: var(--gold); text-decoration: none; }
-
-  /* ── SECTION HEADER ── */
-  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-  .section-label { font-size: 0.62rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); }
-  .filter-row { display: flex; gap: 0.4rem; }
-  .filter-btn { padding: 0.3rem 0.8rem; font-family: 'Georgia', Georgia, serif; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--gray); border: 1px solid var(--dim); transition: all 0.2s; }
-  .filter-btn.active, .filter-btn:hover { color: var(--white); border-color: var(--mid); }
-
-  /* ── CHAT ── */
-  .chat-layout { display: grid; grid-template-columns: 1fr 220px; gap: 1px; background: var(--dim); height: calc(100vh - 14rem); min-height: 400px; }
-  .chat-sidebar { background: #080808; overflow-y: auto; }
-  .chat-item { display: flex; align-items: center; gap: 0.8rem; padding: 1rem; cursor: pointer; border-bottom: 1px solid var(--dim); transition: background 0.15s; }
-  .chat-item:hover, .chat-item.active { background: #111; }
-  .chat-item.active { border-left: 2px solid var(--gold); }
-  .chat-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--dim); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; color: var(--gray); }
-  .chat-item-info { flex: 1; min-width: 0; }
-  .chat-item-name { font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chat-item-preview { font-size: 0.68rem; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.15rem; }
-  .chat-unread { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-
-  .chat-main { background: #080808; display: flex; flex-direction: column; }
-  .chat-header { padding: 1rem 1.3rem; border-bottom: 1px solid var(--dim); display: flex; align-items: center; gap: 0.8rem; }
-  .chat-header-name { font-size: 0.9rem; }
-  .chat-header-status { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
-  .msg-bubble { max-width: 72%; padding: 0.7rem 1rem; font-size: 0.85rem; line-height: 1.6; }
-  .msg-bubble.them { background: #111; border: 1px solid var(--dim); color: var(--white); align-self: flex-start; }
-  .msg-bubble.me { background: transparent; border: 1px solid #444; color: var(--white); align-self: flex-end; }
-  .msg-time { font-size: 0.58rem; color: var(--gray); margin-top: 0.25rem; letter-spacing: 0.1em; }
-  .msg-sender { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.25rem; }
-  .chat-input-row { display: flex; border-top: 1px solid var(--dim); }
-  .chat-input { flex: 1; background: transparent; border: none; padding: 1rem 1.2rem; font-family: 'Georgia', Georgia, serif; font-size: 0.85rem; color: var(--white); outline: none; }
-  .chat-input::placeholder { color: #444; }
-  .btn-send { background: transparent; border-left: 1px solid var(--dim); color: var(--gray); padding: 1rem 1.3rem; cursor: pointer; font-size: 1.1rem; transition: color 0.2s; }
-  .btn-send:hover { color: var(--gold); }
-  .chat-empty { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--gray); font-style: italic; font-size: 0.85rem; }
-
-  /* ── CONFIRM MODAL ── */
-  #confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; padding: 1.5rem; }
-  #confirm-overlay.open { opacity: 1; pointer-events: all; }
-  .confirm-box { background: #0a0a0a; border: 1px solid var(--dim); max-width: 400px; width: 100%; padding: 2.5rem; position: relative; }
-  .confirm-icon { font-size: 2rem; margin-bottom: 1rem; }
-  .confirm-title { font-size: 1.1rem; font-weight: 400; margin-bottom: 0.5rem; }
-  .confirm-sub { font-size: 0.82rem; color: var(--gray); font-style: italic; line-height: 1.5; margin-bottom: 2rem; }
-  .confirm-btns { display: flex; gap: 0.8rem; }
-
-  /* ── TOAST ── */
-  .toast { position: fixed; bottom: 5rem; right: 1.5rem; background: #111; border: 1px solid var(--dim); padding: 0.8rem 1.3rem; font-size: 0.78rem; letter-spacing: 0.08em; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; }
-  .toast.show { opacity: 1; }
-
-  .empty-state { text-align: center; padding: 4rem 0; color: var(--gray); font-style: italic; font-size: 0.85rem; }
-
-  @media (max-width: 600px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    .chat-layout { grid-template-columns: 1fr; }
-    .chat-sidebar { display: none; }
-    .chat-sidebar.show { display: block; height: 200px; }
-    .row-main { flex-wrap: wrap; }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .user-name { font-weight: 600; font-size: 16px; letter-spacing: -0.2px; }
+  .profile-name-link {
+    background: none; border: none; padding: 0; margin: 0;
+    font: inherit; color: inherit; cursor: pointer; text-align: inherit;
+    letter-spacing: inherit; line-height: inherit;
   }
-
-  /* ── AVATAR WRAPPER (unread indicator) ── */
-  .avatar-wrap { position: relative; flex-shrink: 0; }
-  .avatar-wrap .unread-dot {
-    position: absolute; top: -3px; right: -3px;
-    width: 13px; height: 13px; border-radius: 50%;
-    background: var(--white); border: 2px solid var(--black);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.45rem; color: var(--black); font-weight: bold;
+  .profile-name-link:hover { color: var(--gold); }
+  .chat-active-label .profile-name-link { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+  .chat-active-label .profile-name-link:hover { color: var(--gold); }
+  #chat-messages .profile-name-link.msg-sender:hover { color: var(--gold); }
+  .user-badge {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    background: transparent; border-radius: 4px; padding: 2px 6px;
   }
+  .user-badge.client { color: var(--green); border: 1px solid var(--green); }
+  .user-badge.inactive { color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.12); }
+  .user-badge.deleted { color: #f87171; border: 1px solid rgba(248,113,113,0.55); }
+  .user-card.is-deleted { opacity: 0.55; }
+  .user-email { font-size: 13px; color: rgba(255,255,255,0.25); margin-top: 3px; letter-spacing: -0.1px; }
+  .btn-view {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 8px 14px; color: rgba(255,255,255,0.45);
+    font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font-ui);
+    flex-shrink: 0; letter-spacing: 0.03em;
+  }
+  .btn-view:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+  .empty-state { text-align: center; padding: 30px 0; color: rgba(255,255,255,0.2); font-size: 14px; }
 
-  /* ── CLIENT PROFILE PAGE ── */
-  #page-profile { }
-  .profile-hero { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+  /* ── TOGGLE ── */
+  .toggle {
+    width: 48px; height: 28px; border-radius: 999px;
+    background: rgba(255,255,255,0.12); border: none; cursor: pointer;
+    position: relative; transition: background 0.25s; flex-shrink: 0; padding: 0;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle:disabled { opacity: 0.6; cursor: wait; }
+  .toggle-knob {
+    display: block; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; position: absolute; top: 3px; left: 3px;
+    transition: left 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .toggle.on .toggle-knob { left: 23px; }
+
+  /* ── PROFILE ── */
+  .profile-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .profile-header-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
   .profile-avatar-lg {
-    width: 72px; height: 72px; border-radius: 50%;
-    background: var(--dim); border: 1px solid var(--mid);
+    width: 60px; height: 60px; border-radius: 18px; background: #111;
+    border: 1px solid rgba(255,255,255,0.08);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; color: var(--white); flex-shrink: 0; position: relative;
+    font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.35);
+    flex-shrink: 0; letter-spacing: 0.05em; position: relative;
   }
   .profile-avatar-lg .unread-dot {
-    position: absolute; top: -2px; right: -2px;
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--white); border: 2px solid var(--black);
+    position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--white); color: var(--bg);
+    font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+  }
+  .profile-name { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; font-family: var(--font-serif); }
+  .profile-email { margin: 3px 0 0; font-size: 13px; color: rgba(255,255,255,0.3); }
+  .profile-since { margin: 3px 0 0; font-size: 12px; color: rgba(255,255,255,0.18); }
+  .profile-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .status-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    background: transparent; border-radius: 5px; padding: 3px 8px; transition: all 0.3s;
+    color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.12);
+  }
+  .status-badge.client { color: var(--green); border-color: var(--green); }
+  .status-badge.inactive { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.15); }
+  .status-badge.deleted { color: #f87171; border-color: rgba(248,113,113,0.55); }
+
+  .prof-deleted-banner {
+    margin: 16px 24px 0; padding: 12px 16px; border-radius: 12px;
+    border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.08);
+    color: rgba(248,113,113,0.9); font-size: 13px; line-height: 1.5;
+  }
+  .prof-inactive-banner {
+    margin: 16px 24px 0; padding: 12px 16px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.45); font-size: 13px; line-height: 1.5;
+  }
+  #page-profile.profile-is-inactive #prof-dimmed-extra,
+  #page-profile.profile-is-inactive #client-toggle { display: none !important; }
+  #page-profile.profile-is-inactive #btn-send-invoice { display: none; }
+  #page-profile.profile-is-deleted .profile-actions,
+  #page-profile.profile-is-deleted #prof-publish-section,
+  #page-profile.profile-is-deleted .btn-remove-user { display: none !important; }
+  #page-profile.profile-is-deleted .profile-dimmed { opacity: 0.35; pointer-events: none; }
+  #page-profile.profile-is-deleted .profile-contact-block { opacity: 1; pointer-events: auto; }
+
+  .sub-status.deleted { border-color: rgba(248,113,113,0.55); color: #f87171; }
+  .sub-card.is-deleted { opacity: 0.55; border-color: rgba(248,113,113,0.2); }
+  .sub-plan-select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .profile-actions { padding: 20px 24px 0; display: flex; gap: 10px; }
+  .btn-action {
+    flex: 1; background: transparent; border-radius: 13px;
+    padding: 13px 0; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: var(--font-ui); letter-spacing: 0.02em;
+  }
+  .btn-action.gold { border: 1px solid var(--gold-border); color: var(--gold); }
+  .btn-action.outline { border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); }
+
+  .profile-block { padding: 24px 24px 0; }
+  .profile-block.tight { padding-top: 20px; }
+  .contact-card {
+    background: transparent; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.07); overflow: hidden;
+  }
+  .contact-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-label { font-size: 14px; color: rgba(255,255,255,0.3); }
+  .contact-value { font-size: 14px; color: #fff; }
+
+  .website-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .website-status-text { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .website-card {
+    background: transparent; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.07); padding: 14px 18px;
+  }
+  .website-url-label { font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 0.1em; margin-bottom: 8px; text-transform: uppercase; }
+  .website-url-input {
+    width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 10px 14px; font-size: 15px; color: #fff;
+    outline: none; box-sizing: border-box; font-family: var(--font-ui);
+  }
+
+  .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-pct { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.35); }
+  .progress-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 99px; margin-bottom: 12px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 99px; transition: width 0.4s ease;
+    background: linear-gradient(90deg, #16a34a, var(--green)); width: 0%;
+  }
+  .progress-steps { display: flex; flex-direction: column; gap: 6px; }
+  .progress-step {
+    background: transparent; border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 13px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; text-align: left; font-family: var(--font-ui); width: 100%; color: inherit;
+  }
+  .progress-step-icon {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    background: transparent; border: 1.5px solid rgba(255,255,255,0.15);
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.55rem; color: var(--black); font-weight: bold;
+    font-size: 10px; color: rgba(255,255,255,0.18); transition: all 0.2s;
   }
-  .profile-name { font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 400; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
-  .profile-email { font-size: 0.78rem; color: var(--gray); }
-  .profile-actions { display: flex; gap: 0.7rem; margin-top: 0.8rem; flex-wrap: wrap; }
-  .profile-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--dim); }
+  .progress-step-icon.done { background: var(--green); border-color: var(--green); color: #fff; font-size: 11px; font-weight: 800; }
+  .progress-step-label { font-size: 15px; color: rgba(255,255,255,0.3); font-weight: 400; flex: 1; transition: color 0.2s; }
+  .progress-step-label.done { color: #fff; font-weight: 500; }
+  .progress-step-tag { font-size: 10px; color: rgba(255,255,255,0.2); font-weight: 600; letter-spacing: 0.08em; }
+
+  .publish-card {
+    background: transparent; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.07); overflow: hidden;
+  }
+  .publish-textarea {
+    width: 100%; background: transparent; border: none; resize: none;
+    font-size: 15px; color: #fff; outline: none; font-family: var(--font-ui);
+    box-sizing: border-box; padding: 16px 18px; line-height: 1.5; caret-color: #fff;
+  }
+  .publish-textarea::placeholder { color: rgba(255,255,255,0.2); }
+  .publish-footer { padding: 8px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .btn-publish {
+    width: 100%; padding: 12px 0; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    color: rgba(255,255,255,0.45); font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: var(--font-ui);
+  }
+  .update-confirm { font-size: 12px; color: var(--green); margin-top: 8px; min-height: 1rem; }
+
   .btn-remove-user {
-    background: none; border: none; padding: 0;
-    font-family: 'Georgia', Georgia, serif;
-    font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
-    color: #555; cursor: pointer; transition: color 0.2s; opacity: 0.7;
+    width: calc(100% - 48px); margin: 12px 24px 0; padding: 14px;
+    background: transparent; border: 1px solid rgba(255,60,60,0.15);
+    border-radius: 13px; color: rgba(255,80,80,0.4);
+    font-size: 13px; letter-spacing: 0.04em; cursor: pointer; font-family: var(--font-ui);
   }
-  .btn-remove-user:hover { color: #e74c3c; opacity: 1; }
+  .btn-remove-user:hover { border-color: rgba(255,60,60,0.3); color: rgba(255,80,80,0.6); }
 
-  .profile-section { margin-bottom: 2rem; }
-  .profile-section-title { font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--dim); }
+  /* ── CHAT ── */
+  .chat-top { flex-shrink: 0; }
+  .chat-back-row { padding: 14px 24px 0; display: flex; align-items: center; gap: 14px; }
+  .chat-back-row .eyebrow { margin: 0; }
+  .chat-tabs {
+    padding: 14px 24px 0; display: flex; gap: 8px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .chat-tabs::-webkit-scrollbar { display: none; }
+  .chat-tab {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 10px 14px; cursor: pointer;
+    font-family: var(--font-ui); display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; min-width: 0; color: inherit;
+  }
+  .chat-tab.active { border-color: var(--gold); }
+  .chat-tab.inactive {
+    border-color: rgba(255,255,255,0.1);
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.025) 0,
+      rgba(255,255,255,0.025) 5px,
+      rgba(255,255,255,0.07) 5px,
+      rgba(255,255,255,0.07) 10px
+    );
+  }
+  .chat-tab.inactive.active {
+    border-color: rgba(255,255,255,0.28);
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.04) 0,
+      rgba(255,255,255,0.04) 5px,
+      rgba(255,255,255,0.1) 5px,
+      rgba(255,255,255,0.1) 10px
+    );
+  }
+  .chat-tab.inactive .chat-tab-preview { color: rgba(255,255,255,0.2); }
+  .chat-active-label.inactive-thread .profile-name-link {
+    color: rgba(255,255,255,0.28);
+  }
+  .chat-active-label.inactive-thread .profile-name-link:hover {
+    color: rgba(255,255,255,0.45);
+  }
+  .chat-tab-avatar-wrap { position: relative; flex-shrink: 0; }
+  .chat-tab-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); letter-spacing: 0.05em;
+  }
+  .chat-tab.active .chat-tab-avatar { border-color: var(--gold-border); color: var(--gold); }
+  .chat-tab-dot {
+    position: absolute; bottom: 0; right: 0; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--green); border: 1.5px solid var(--bg);
+  }
+  .chat-tab-unread {
+    position: absolute; top: -2px; right: -2px; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--green); border: 1.5px solid var(--bg);
+  }
+  .chat-tab-info { text-align: left; min-width: 0; }
+  .chat-tab-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6); white-space: nowrap; }
+  .chat-tab.active .chat-tab-name { color: var(--gold); }
+  .chat-tab.inactive .chat-tab-name { color: rgba(255,255,255,0.38); }
+  .chat-tab.inactive.active .chat-tab-name { color: rgba(255,255,255,0.55); }
+  .chat-tab.inactive .profile-name-link:hover,
+  .chat-tab.inactive.active .profile-name-link:hover { color: rgba(255,255,255,0.55); }
+  .chat-tab.inactive.active .chat-tab-avatar {
+    border-color: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.4);
+  }
+  .chat-tab-preview {
+    font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 1px;
+    max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .chat-active-label {
+    padding: 16px 24px 0; display: flex; align-items: center; gap: 8px;
+  }
+  .chat-active-label hr { height: 1px; flex: 1; border: none; background: rgba(255,255,255,0.05); }
+  .chat-active-label span { font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.2); text-transform: uppercase; }
 
-  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
-  .info-block { border: 1px solid var(--dim); border-radius: 8px; padding: 1rem; }
-  .info-block .ib-label { font-size: 0.58rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.35rem; }
-  .info-block .ib-val { font-size: 0.9rem; color: var(--white); }
-  .info-block .ib-val a { color: var(--gold); text-decoration: none; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 12px; min-height: 0;
+  }
+  .chat-empty { display: flex; align-items: center; justify-content: center; flex: 1; color: rgba(255,255,255,0.2); font-size: 14px; text-align: center; padding: 2rem; }
+  #chat-messages > div[style*="align-self"] { display: flex; flex-direction: column; align-items: flex-end; }
+  #chat-messages > div:not([style*="align-self"]) { display: flex; flex-direction: column; align-items: flex-start; }
+  #chat-messages .msg-bubble {
+    max-width: 72%; padding: 10px 14px; font-size: 15px; line-height: 1.4;
+    background: transparent;
+  }
+  #chat-messages .msg-bubble.me {
+    border: 1px solid var(--gold-border); border-radius: 16px 16px 4px 16px; color: #fff;
+  }
+  #chat-messages .msg-bubble.them {
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 16px 16px 16px 4px;
+    color: rgba(255,255,255,0.85);
+  }
+  #chat-messages .msg-sender {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  #chat-messages .msg-bubble.me .msg-sender { color: var(--gold); }
+  #chat-messages .msg-bubble.them .msg-sender { color: rgba(255,255,255,0.3); }
+  #chat-messages .msg-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 4px; letter-spacing: 0.02em; }
 
-  /* Website status card */
-  .website-status-card { border: 1px solid var(--dim); border-radius: 8px; padding: 1.4rem; margin-bottom: 1rem; }
-  .ws-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-  .ws-url { font-size: 0.9rem; color: var(--gold); }
-  .ws-steps { display: flex; flex-direction: column; gap: 0.6rem; }
-  .ws-step { display: flex; align-items: center; gap: 0.8rem; font-size: 0.8rem; }
-  .ws-step-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; flex-shrink: 0; }
-  .ws-step-icon.done  { background: var(--green); color: var(--black); }
-  .ws-step-icon.active { background: var(--gold);  color: var(--black); }
-  .ws-step-icon.todo  { background: var(--dim);   color: var(--gray); }
-  .ws-step-label { flex: 1; }
-  .ws-step-label.done  { color: var(--green); }
-  .ws-step-label.active { color: var(--white); }
-  .ws-step-label.todo  { color: #444; }
-  .ws-step-selectable { cursor: pointer; border-radius: 6px; padding: 0.25rem 0.4rem; margin: -0.25rem -0.4rem; transition: background 0.15s; }
-  .ws-step-selectable:hover { background: #111; }
-  .ws-step-selectable.selected .ws-step-label { color: var(--white); font-weight: normal; }
-  .client-toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1rem; border: 1px solid var(--dim); border-radius: 8px; margin-bottom: 1rem; }
-  .client-toggle-label { font-size: 0.85rem; }
-  .row-client-toggle { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-  .row-client-toggle span { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray); }
+  .chat-input-bar {
+    flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 12px 16px 20px; display: flex; gap: 10px; align-items: center;
+  }
+  .chat-input {
+    flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 11px 16px; font-size: 14px; color: #fff;
+    outline: none; font-family: var(--font-ui); caret-color: var(--gold);
+  }
+  .chat-input::placeholder { color: rgba(255,255,255,0.2); }
+  .chat-input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-input-bar.read-only .btn-send {
+    opacity: 0.35; pointer-events: none; cursor: not-allowed;
+    border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.25);
+  }
+  .btn-send:disabled { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+  .btn-send {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: transparent; border: 1px solid var(--gold-border);
+    color: var(--gold); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-send:hover { background: rgba(201,168,76,0.08); }
 
-  .field textarea { width: 100%; background: transparent; border: 1px solid var(--dim); padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; resize: vertical; }
-  .field textarea:focus { border-color: #555; }
-  .field textarea::placeholder { color: #444; }
+  /* ── INVOICES ── */
+  .invoice-tabs { padding: 20px 24px 0; display: flex; gap: 8px; }
+  .invoice-tab {
+    flex: 1; padding: 10px 0; background: transparent;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    cursor: pointer; font-family: var(--font-ui); font-size: 12px;
+    font-weight: 500; letter-spacing: 0.02em; color: rgba(255,255,255,0.35);
+    transition: all 0.2s;
+  }
+  .invoice-tab.active { border-color: var(--gold); color: var(--gold); }
+  .invoice-panel { padding: 20px 24px 0; display: flex; flex-direction: column; gap: 10px; }
+  .invoice-panel.hidden { display: none; }
 
-  .ws-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--green); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
-  .ws-toggle-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--white); position: absolute; top: 3px; right: 3px; transition: left 0.2s, right 0.2s; }
-  .toggle-label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); }
+  .stripe-link {
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--gold-border); border-radius: 14px;
+    padding: 14px 18px; text-decoration: none;
+  }
+  .stripe-link-inner { display: flex; align-items: center; gap: 12px; }
+  .stripe-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(99,91,255,0.12); border: 1px solid rgba(99,91,255,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .stripe-title { font-size: 14px; font-weight: 600; color: #fff; }
+  .stripe-sub { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 2px; }
+  .stripe-arrow { font-size: 14px; color: var(--gold); }
+
+  .sub-label { font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.2); margin: 8px 0 0; text-transform: uppercase; }
+  .sub-card { border: 1px solid var(--gold-border); border-radius: 18px; overflow: hidden; }
+  .sub-card-header {
+    padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sub-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .sub-row:last-child { border-bottom: none; }
+  .sub-row-label { font-size: 14px; color: rgba(255,255,255,0.35); }
+  .sub-row-value { font-size: 14px; font-weight: 500; color: #fff; }
+  .sub-status {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    border: 1px solid var(--green); color: var(--green); border-radius: 4px; padding: 3px 8px;
+  }
+  .sub-status.inactive {
+    border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.25);
+  }
+  .sub-card.inactive { border-color: rgba(255,255,255,0.08); }
+  .sub-plan-select {
+    background: #111; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: #fff; font-size: 13px; padding: 6px 10px; font-family: var(--font-ui);
+    max-width: min(220px, 55vw); cursor: pointer;
+  }
+  .sub-plan-select:disabled { opacity: 0.5; cursor: wait; }
+  .sub-row-value.muted { color: rgba(255,255,255,0.35); font-weight: 400; }
+
+  .no-plan-card { border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; overflow: hidden; }
+  .no-plan-row {
+    padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05); opacity: 0.45;
+  }
+  .no-plan-row:last-child { border-bottom: none; }
+  .no-plan-badge {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.2);
+    border-radius: 4px; padding: 3px 8px;
+  }
+
+  .auto-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .btn-add-msg {
+    background: transparent; border: 1px solid var(--gold-border);
+    border-radius: 8px; padding: 5px 12px; color: var(--gold);
+    font-size: 12px; cursor: pointer; font-family: var(--font-ui); letter-spacing: 0.04em;
+  }
+  .auto-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px 18px; }
+  .auto-card-title { font-weight: 600; font-size: 15px; letter-spacing: -0.1px; color: var(--gold); }
+  .auto-card-trigger { font-size: 10px; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3px; }
+  .auto-card-body { font-size: 13px; color: rgba(255,255,255,0.4); margin: 8px 0 0; line-height: 1.5; }
+  .auto-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .auto-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-auto {
+    background: transparent; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 7px; padding: 5px 11px; color: rgba(255,255,255,0.35);
+    font-size: 11px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .btn-auto.copied { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
+  .auto-form { border: 1px solid var(--gold-border); border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .auto-form input, .auto-form textarea {
+    background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 9px 12px; color: #fff; font-size: 14px;
+    font-family: var(--font-ui); outline: none; width: 100%;
+  }
+  .auto-form input.trigger { color: var(--gold); font-size: 12px; letter-spacing: 0.04em; border-color: rgba(255,255,255,0.08); }
+  .auto-form textarea { resize: none; line-height: 1.5; color: rgba(255,255,255,0.7); }
+  .auto-form-btns { display: flex; gap: 8px; }
+  .auto-form-btns button {
+    flex: 1; padding: 11px 0; background: transparent; border-radius: 10px;
+    font-size: 13px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .auto-form-btns .save { border: 1px solid var(--gold-border); color: var(--gold); }
+  .auto-form-btns .cancel { border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.3); }
+
+  /* ── MODAL / TOAST ── */
+  #confirm-overlay, #billing-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 3000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; padding: 1.5rem; }
+  #confirm-overlay.open, #billing-confirm-overlay.open { opacity: 1; pointer-events: all; }
+  .confirm-box { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.08); max-width: 400px; width: 100%; padding: 2.5rem; border-radius: 16px; position: relative; z-index: 1; }
+  .confirm-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .confirm-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; font-family: var(--font-serif); }
+  .confirm-sub { font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.5; margin-bottom: 2rem; }
+  .confirm-btns { display: flex; gap: 0.8rem; }
+  .btn-sm { padding: 10px 16px; font-family: var(--font-ui); font-size: 13px; cursor: pointer; border-radius: 10px; }
+  .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); }
+  .btn-gold { background: transparent; border: 1px solid var(--gold-border); color: var(--gold); }
+
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #111; border: 1px solid rgba(255,255,255,0.08); padding: 0.8rem 1.3rem; font-size: 0.78rem; letter-spacing: 0.08em; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; border-radius: 10px; max-width: 90%; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<!-- APP -->
 <div id="app">
 
-  <!-- TOPBAR -->
-  <div class="topbar">
-    <a href="index.html" class="topbar-brand" style="text-decoration:none; cursor:pointer;">Rensé</a>
-    <div class="topbar-right">
-      <span class="gold-badge" style="position:relative;">Admin<span id="topbar-unread" style="display:none;position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:var(--white);color:var(--black);font-size:0.5rem;font-weight:bold;align-items:center;justify-content:center;border:2px solid #080808;">0</span></span>
+  <!-- ── DASHBOARD ── -->
+  <div class="page active" id="page-overview">
+    <div class="nav">
+      <a href="index.html" class="nav-brand">RENSÉ</a>
+      <span class="nav-badge">Admin<span class="nav-badge-dot" id="topbar-unread">0</span></span>
+    </div>
+    <div class="hairline"></div>
+    <div class="dash-greeting">
+      <p class="eyebrow">Dashboard</p>
+      <h1 class="headline" id="greeting-text">Good morning, Rensé.</h1>
+    </div>
+    <div class="stats-grid">
+      <button type="button" class="stat-tile" id="tile-clients" onclick="openList('clients')">
+        <div class="stat-tile-top">
+          <span class="stat-tile-label">Clients</span>
+          <span class="stat-tile-icon">👥</span>
+        </div>
+        <span class="stat-tile-num" id="ov-clients">—</span>
+        <span class="stat-tile-hint">View →</span>
+      </button>
+      <button type="button" class="stat-tile" id="tile-invoices" onclick="switchTab('invoices')">
+        <div class="stat-tile-top">
+          <span class="stat-tile-label">Invoices</span>
+          <span class="stat-tile-icon">🧾</span>
+        </div>
+        <span class="stat-tile-num" id="ov-invoices">0</span>
+        <span class="stat-tile-hint">View →</span>
+      </button>
+      <button type="button" class="stat-tile" id="tile-accounts" onclick="openList('all')">
+        <div class="stat-tile-top">
+          <span class="stat-tile-label">Accounts</span>
+          <span class="stat-tile-icon">🔑</span>
+        </div>
+        <span class="stat-tile-num" id="ov-accounts">—</span>
+        <span class="stat-tile-hint">View →</span>
+      </button>
+      <button type="button" class="stat-tile" id="tile-chat" onclick="switchTab('chat')">
+        <div class="stat-tile-top">
+          <span class="stat-tile-label">Chat</span>
+          <span class="stat-tile-icon">💬</span>
+        </div>
+        <span class="stat-tile-num" id="ov-chats">0</span>
+        <span class="stat-tile-hint">View →</span>
+      </button>
+    </div>
+    <div class="hairline hairline-wide"></div>
+    <button type="button" class="sign-out-btn" id="btn-logout">Sign out</button>
+  </div>
+
+  <!-- ── UNIFIED LIST ── -->
+  <div class="page" id="page-list">
+    <div class="nav">
+      <span class="nav-brand">RENSÉ</span>
+      <span class="nav-badge">Admin</span>
+    </div>
+    <div class="hairline"></div>
+    <button type="button" class="back-btn" onclick="goBack()">← Back</button>
+    <div class="section-head">
+      <p class="eyebrow" id="list-eyebrow">Accounts</p>
+      <h1 class="headline" id="list-title">All Users</h1>
+    </div>
+    <div class="user-list-wrap" id="user-list">
+      <p class="empty-state">Loading…</p>
     </div>
   </div>
 
-  <!-- CONTENT -->
-  <div class="content">
-
-    <!-- ── OVERVIEW ── -->
-    <div class="page active" id="page-overview">
-      <div class="page-header">
-        <p class="page-title">Dashboard</p>
-        <h2 class="page-headline">Good to see you, Rensé.</h2>
-      </div>
-      <div class="stats">
-        <div class="stat" onclick="switchTab('clients')">
-          <div class="stat-label">Clients</div>
-          <div class="stat-icon">👥</div>
-          <div class="stat-bottom"><div class="stat-num" id="ov-clients">—</div></div>
-        </div>
-        <div class="stat" onclick="switchTab('invoices')">
-          <div class="stat-label">Invoices</div>
-          <div class="stat-icon">📄</div>
-          <div class="stat-bottom"><div class="stat-num" id="ov-invoices">—</div></div>
-        </div>
-        <div class="stat" onclick="switchTab('accounts')">
-          <div class="stat-label">Accounts</div>
-          <div class="stat-icon">🔑</div>
-          <div class="stat-bottom"><div class="stat-num" id="ov-accounts">—</div></div>
-        </div>
-        <div class="stat" onclick="switchTab('chat')">
-          <div class="stat-label">Chat</div>
-          <div class="stat-icon">💬</div>
-          <div class="stat-bottom"><div class="stat-num" id="ov-chats">0</div></div>
-        </div>
-      </div>
-      <p style="text-align:center;color:var(--gray);font-style:italic;font-size:0.82rem;">Use the navigation below to manage your workspace.</p>
-      <button class="btn-logout" id="btn-logout">Sign Out</button>
+  <!-- ── PROFILE ── -->
+  <div class="page" id="page-profile">
+    <div class="nav">
+      <span class="nav-brand">RENSÉ</span>
+      <span class="nav-badge">Admin</span>
     </div>
+    <div class="hairline"></div>
+    <button type="button" class="back-btn" onclick="switchTab(window.profileReturnTab || 'list')">← Back</button>
 
-    <!-- ── CLIENTS ── -->
-    <div class="page" id="page-clients">
-      <button class="back-btn visible" onclick="goBack()">← Back</button>
-      <div class="page-header">
-        <p class="page-title">👥 Clients</p>
-        <h2 class="page-headline">Paid Clients</h2>
-      </div>
-      <div class="section-head">
-        <span class="section-label">All clients</span>
-        <div class="filter-row">
-          <button class="filter-btn active">All</button>
-          <button class="filter-btn">Active</button>
-          <button class="filter-btn">Inactive</button>
-        </div>
-      </div>
-      <div id="clients-list">
-        <p class="empty-state">No clients yet.</p>
-      </div>
-    </div>
+    <p class="prof-deleted-banner" id="prof-deleted-banner" hidden>This account was deleted. Details below are read-only for your records.</p>
+    <p class="prof-inactive-banner" id="prof-inactive-banner" hidden>This account is inactive. You can view their details and message history, but cannot send messages or change settings.</p>
 
-    <!-- ── INVOICES ── -->
-    <div class="page" id="page-invoices">
-      <button class="back-btn visible" onclick="goBack()">← Back</button>
-      <div class="page-header">
-        <p class="page-title">📄 Invoices</p>
-        <h2 class="page-headline">Subscriptions</h2>
-      </div>
-      <div class="section-head">
-        <span class="section-label">Yearly subscriptions</span>
-        <div class="filter-row">
-          <button class="filter-btn active">All</button>
-          <button class="filter-btn">Due Soon</button>
-          <button class="filter-btn">Overdue</button>
-        </div>
-      </div>
-      <div id="invoices-list">
-        <p class="empty-state">No invoices yet.</p>
-      </div>
-    </div>
-
-    <!-- ── ACCOUNTS ── -->
-    <div class="page" id="page-accounts">
-      <button class="back-btn visible" onclick="goBack()">← Back</button>
-      <div class="page-header">
-        <p class="page-title">🔑 Accounts</p>
-        <h2 class="page-headline">Registered — Not Yet Clients</h2>
-      </div>
-      <div class="section-head">
-        <span class="section-label">Have an account · no active subscription</span>
-      </div>
-      <div id="accounts-list">
-        <p class="empty-state">No registered accounts yet.</p>
-      </div>
-    </div>
-
-    <!-- ── CHAT ── -->
-    <div class="page" id="page-chat">
-      <button class="back-btn visible" onclick="goBack()">← Back</button>
-      <div class="page-header">
-        <p class="page-title">💬 Chat</p>
-        <h2 class="page-headline">Messages</h2>
-      </div>
-      <div class="chat-layout">
-
-        <!-- Chat window -->
-        <div class="chat-main">
-          <div class="chat-header">
-            <div class="chat-avatar" id="chat-av">—</div>
-            <div>
-              <div class="chat-header-name" id="chat-name">Select a conversation</div>
-              <div class="chat-header-status" id="chat-status"></div>
-            </div>
-          </div>
-          <div class="chat-messages" id="chat-messages">
-            <div class="chat-empty">No messages yet. Select a client to start chatting.</div>
-          </div>
-          <div class="chat-input-row">
-            <input class="chat-input" id="chat-input" placeholder="Message as Rensé…" disabled />
-            <button class="btn-send" onclick="sendMessage()">➤</button>
-          </div>
-        </div>
-
-        <div class="chat-sidebar" id="chat-sidebar">
-          <p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>
-        </div>
-
-      </div>
-    </div>
-
-
-    <!-- ── CLIENT PROFILE ── -->
-    <div class="page" id="page-profile">
-      <button class="back-btn visible" onclick="switchTab(window.profileReturnTab || 'overview')">← Back</button>
-      <div class="profile-hero">
-        <div class="profile-avatar-lg" id="prof-avatar">—
-          <div class="unread-dot" id="prof-unread-dot" style="display:none;">0</div>
-        </div>
+    <div class="profile-dimmed" id="prof-dimmed-wrap">
+    <div class="profile-header">
+      <div class="profile-header-left">
+        <div class="profile-avatar-lg" id="prof-avatar">—<div class="unread-dot" id="prof-unread-dot" style="display:none;">0</div></div>
         <div>
-          <div class="profile-name" id="prof-name">—</div>
-          <div class="profile-email" id="prof-email">—</div>
-          <div class="profile-actions">
-            <button class="btn-sm btn-gold" onclick="goToChat()">💬 Message</button>
-            <button class="btn-sm btn-outline" onclick="confirmSend(document.getElementById('prof-email').textContent, document.getElementById('prof-name').textContent)">📧 Send Invoice</button>
-          </div>
+          <h2 class="profile-name" id="prof-name">—</h2>
+          <p class="profile-email" id="prof-email">—</p>
+          <p class="profile-since" id="prof-since-inline">—</p>
         </div>
       </div>
-
-      <div class="profile-section">
-        <p class="profile-section-title">Contact Details</p>
-        <div class="info-grid">
-          <div class="info-block"><p class="ib-label">📞 Phone</p><p class="ib-val" id="prof-phone">—</p></div>
-          <div class="info-block"><p class="ib-label">✉️ Email</p><p class="ib-val" id="prof-email2">—</p></div>
-          <div class="info-block"><p class="ib-label">📅 Client Since</p><p class="ib-val" id="prof-since">—</p></div>
-          <div class="info-block"><p class="ib-label">💳 Status</p><p class="ib-val" id="prof-status">—</p></div>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <p class="profile-section-title">Client Status</p>
-        <div class="client-toggle-row">
-          <span class="client-toggle-label">Is a client</span>
-          <div style="display:flex;align-items:center;gap:0.8rem;">
-            <span class="toggle-label" id="client-toggle-label">No</span>
-            <div class="ws-toggle" id="client-toggle" onclick="toggleClientStatus()">
-              <div class="ws-toggle-thumb" id="client-thumb"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="profile-section" id="prof-website-section">
-        <p class="profile-section-title">🌐 Website Status</p>
-        <div class="website-status-card">
-          <div class="field" style="margin-bottom:1rem;">
-            <label style="display:block;font-size:0.58rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--gray);margin-bottom:0.35rem;">Website URL</label>
-            <input type="text" id="prof-website-input" placeholder="example.com" style="width:100%;background:transparent;border:1px solid var(--dim);padding:0.6rem 0.8rem;font-family:'Georgia',Georgia,serif;font-size:0.88rem;color:var(--white);outline:none;"/>
-          </div>
-          <div class="ws-header">
-            <p style="font-size:0.72rem;color:var(--gray);font-style:italic;">Click a stage to update progress</p>
-            <div style="display:flex;align-items:center;gap:0.8rem;">
-              <span class="toggle-label" id="toggle-label">Active</span>
-              <div class="ws-toggle" id="ws-toggle" onclick="toggleWebsite()">
-                <div class="ws-toggle-thumb" id="ws-thumb"></div>
-              </div>
-            </div>
-          </div>
-          <div class="ws-steps" id="prof-ws-steps"></div>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <p class="profile-section-title">Publish Update</p>
-        <div class="field">
-          <textarea id="update-msg" rows="3" placeholder="Write an update for this client…"></textarea>
-        </div>
-        <button class="btn-sm btn-gold" onclick="sendUpdate()">Send to Client</button>
-        <p id="update-confirm" style="font-size:0.75rem;color:var(--green);font-style:italic;margin-top:0.6rem;min-height:1rem;"></p>
-      </div>
-
-      <div class="profile-footer">
-        <button type="button" class="btn-remove-user" onclick="removeAdminUser()">Remove user</button>
+      <div class="profile-header-right">
+        <span class="status-badge" id="prof-status-badge">○ Inactive</span>
+        <button type="button" class="toggle" id="client-toggle" onclick="toggleClientStatus()"><span class="toggle-knob"></span></button>
       </div>
     </div>
 
-  </div><!-- /content -->
+    <div class="profile-actions">
+      <button type="button" class="btn-action gold" onclick="goToChat()">Message</button>
+      <button type="button" class="btn-action outline" id="btn-send-invoice" onclick="confirmSend(document.getElementById('prof-email').textContent, document.getElementById('prof-name').textContent)">Send Invoice</button>
+    </div>
+    </div>
 
+    <div class="profile-block profile-contact-block">
+      <p class="section-label">Contact</p>
+      <div class="contact-card">
+        <div class="contact-row"><span class="contact-label">Phone</span><span class="contact-value" id="prof-phone">—</span></div>
+        <div class="contact-row"><span class="contact-label">Email</span><span class="contact-value" id="prof-email2">—</span></div>
+      </div>
+    </div>
 
+    <div class="profile-dimmed" id="prof-dimmed-extra">
+    <div class="profile-block tight" id="prof-website-section">
+      <div class="website-header">
+        <p class="section-label" style="margin:0;">Website</p>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="website-status-text" id="toggle-label">Active</span>
+          <button type="button" class="toggle" id="ws-toggle" onclick="toggleWebsite()"><span class="toggle-knob"></span></button>
+        </div>
+      </div>
+      <div class="website-card">
+        <div class="website-url-label">URL</div>
+        <input type="text" class="website-url-input" id="prof-website-input" placeholder="example.com"/>
+      </div>
+    </div>
 
-</div><!-- /app -->
+    <div class="profile-block tight" id="prof-progress-section">
+      <div class="progress-header">
+        <p class="section-label" style="margin:0;">Project Progress</p>
+        <span class="progress-pct" id="prof-progress-pct">0%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="prof-progress-fill"></div></div>
+      <div class="progress-steps" id="prof-ws-steps"></div>
+    </div>
 
-<!-- CONFIRM MODAL -->
+    <div class="profile-block tight" id="prof-publish-section">
+      <p class="section-label">Publish Update</p>
+      <div class="publish-card">
+        <textarea class="publish-textarea" id="update-msg" rows="4" placeholder="Write an update for this client…"></textarea>
+        <div class="publish-footer">
+          <button type="button" class="btn-publish" onclick="sendUpdate()">Send to Client</button>
+        </div>
+      </div>
+      <p class="update-confirm" id="update-confirm"></p>
+    </div>
+    </div>
+
+    <button type="button" class="btn-remove-user" onclick="removeAdminUser()">Remove User</button>
+  </div>
+
+  <!-- ── CHAT ── -->
+  <div class="page page-chat" id="page-chat">
+    <div class="chat-top">
+      <div class="nav">
+        <span class="nav-brand">RENSÉ</span>
+        <span class="nav-badge">Admin</span>
+      </div>
+      <div class="hairline"></div>
+      <div class="chat-back-row">
+        <button type="button" class="back-btn" style="padding:0;" onclick="goBack()">← Back</button>
+        <span class="eyebrow">Messages</span>
+      </div>
+      <div class="chat-tabs" id="chat-tabs"></div>
+      <div class="chat-active-label">
+        <hr/><span id="chat-active-label">Select a conversation</span><hr/>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-empty">No messages yet. Select a client to start chatting.</div>
+    </div>
+    <div class="chat-input-bar">
+      <input class="chat-input" id="chat-input" placeholder="Message as Rensé…" disabled/>
+      <button type="button" class="btn-send" id="btn-chat-send" onclick="sendMessage()" disabled>›</button>
+    </div>
+  </div>
+
+  <!-- ── INVOICES ── -->
+  <div class="page" id="page-invoices">
+    <div class="nav">
+      <span class="nav-brand">RENSÉ</span>
+      <span class="nav-badge">Admin</span>
+    </div>
+    <div class="hairline"></div>
+    <button type="button" class="back-btn" onclick="goBack()">← Back</button>
+    <div class="section-head">
+      <p class="eyebrow">Invoices</p>
+      <h1 class="headline">Billing</h1>
+    </div>
+    <div class="invoice-tabs">
+      <button type="button" class="invoice-tab active" data-inv-tab="subscriptions" onclick="setInvoiceTab('subscriptions')">Subscriptions</button>
+      <button type="button" class="invoice-tab" data-inv-tab="automated" onclick="setInvoiceTab('automated')">Automated Messages</button>
+    </div>
+    <div class="invoice-panel" id="inv-subscriptions"></div>
+    <div class="invoice-panel hidden" id="inv-automated"></div>
+  </div>
+
+</div>
+
+<div id="billing-confirm-overlay" onclick="cancelBillingChange()">
+  <div class="confirm-box" onclick="event.stopPropagation()">
+    <div class="confirm-icon">💳</div>
+    <h3 class="confirm-title" id="billing-confirm-title">Confirm billing change</h3>
+    <p class="confirm-sub" id="billing-confirm-msg" style="white-space:pre-line;"></p>
+    <div class="confirm-btns">
+      <button type="button" class="btn-sm btn-outline" onclick="cancelBillingChange()">Cancel</button>
+      <button type="button" class="btn-sm btn-gold" id="btn-billing-confirm" onclick="confirmBillingChange()">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-overlay">
   <div class="confirm-box">
     <div class="confirm-icon">📧</div>
     <h3 class="confirm-title">Send Payment Request?</h3>
     <p class="confirm-sub" id="confirm-msg">Are you sure you want to send a payment request to this client?</p>
     <div class="confirm-btns">
-      <button class="btn-sm btn-outline" onclick="closeConfirm()">Cancel</button>
-      <button class="btn-sm btn-gold" id="btn-confirm-send">Send</button>
+      <button type="button" class="btn-sm btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button type="button" class="btn-sm btn-gold" id="btn-confirm-send">Send</button>
     </div>
   </div>
 </div>
@@ -478,14 +775,15 @@
 <script type="module">
   import { auth, db } from './firebase-config.js';
   import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { collection, doc, getDoc, onSnapshot, updateDoc, deleteDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { collection, doc, getDoc, onSnapshot, updateDoc, deleteField } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { isAdminUser, ADMIN_EMAILS, isEmailVerified } from './js/auth-helpers.js';
   import {
     subscribeToConversations, subscribeToMessages, sendChatMessage,
     markConversationRead, renderAdminMessages, getInitials, escapeHtml
   } from './js/chat-service.js';
-  import { renderWebsiteSteps, WEBSITE_STAGES } from './js/website-stages.js';
+  import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
+  import { SUBSCRIPTION_PLANS, getPlanById } from './js/subscription-plans.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -499,19 +797,41 @@
   const collectionUsers = new Map();
   const purgingUids = new Set();
   let usersListLoaded = false;
-  let mergeInProgress = false;
+  let refreshFrame = null;
+  let backfillTimer = null;
+  let purgeTimer = null;
+  const backfilledUids = new Set();
+  let lastListSignature = '';
+  let lastChatTabsSignature = '';
+  let appStarted = false;
+  let refreshAgain = false;
 
   function isAdminAccount(data) {
     return data?.role === 'admin' || ADMIN_EMAILS.includes(data?.email);
   }
 
+  function isDeletedUser(data) {
+    return data?.deleted === true || !!data?.deletedAt;
+  }
+  window.isDeletedUser = isDeletedUser;
+
+  function isAnyAccount(data) {
+    return data && !isAdminAccount(data);
+  }
+
   function isRegisteredAccount(data) {
-    return data && !isAdminAccount(data) && data.deleted !== true;
+    return isAnyAccount(data) && !isDeletedUser(data);
   }
 
   function isClientUser(data) {
-    if (!data || isAdminAccount(data) || data.deleted === true) return false;
+    if (!isAnyAccount(data) || isDeletedUser(data)) return false;
     return data.isClient === true;
+  }
+
+  function getUserStatusBadge(u) {
+    if (isDeletedUser(u)) return { text: 'Deleted', cls: 'deleted' };
+    if (u.isClient === true) return { text: 'Client', cls: 'client' };
+    return { text: 'Inactive', cls: 'inactive' };
   }
 
   function formatJoined(iso) {
@@ -521,128 +841,213 @@
     return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   }
 
-  function stageLabel(data) {
-    const idx = data?.websiteStage;
-    if (!Number.isInteger(idx) || idx < 0 || idx >= WEBSITE_STAGES.length) return 'No stage set';
-    return WEBSITE_STAGES[idx];
+  function profileNameLink(uid, name, returnTab, className = '') {
+    if (!uid) return escapeHtml(name);
+    const rt = returnTab ? ` data-return-tab="${escapeHtml(returnTab)}"` : '';
+    const cls = className ? `profile-name-link ${className}` : 'profile-name-link';
+    return `<span role="button" tabindex="0" class="${cls}"${rt} data-open-profile="${escapeHtml(uid)}">${escapeHtml(name)}</span>`;
   }
 
-  function syncToggle(tog, thumb, label, active, activeText, inactiveText) {
-    if (!tog || !thumb) return;
-    if (active) {
-      tog.style.background = '#2ecc71';
-      thumb.style.right = '3px';
-      thumb.style.left = 'auto';
-      if (label) {
-        label.textContent = activeText;
-        label.style.color = '#2ecc71';
-      }
-    } else {
-      tog.style.background = '#333';
-      thumb.style.left = '3px';
-      thumb.style.right = 'auto';
-      if (label) {
-        label.textContent = inactiveText;
-        label.style.color = '#888';
-      }
+  function bindProfileLinks(root) {
+    const scope = root || document;
+    scope.querySelectorAll('[data-open-profile]:not([data-profile-bound])').forEach((el) => {
+      el.dataset.profileBound = '1';
+      const open = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const tab = el.dataset.returnTab || window.adminActivePage || 'list';
+        window.openProfile(el.dataset.openProfile, tab === 'overview' ? 'list' : tab);
+      };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); }
+      });
+    });
+  }
+  window.profileNameLink = profileNameLink;
+  window.bindProfileLinks = bindProfileLinks;
+
+  function setWebsiteToggleUI(active) {
+    const tog = document.getElementById('ws-toggle');
+    syncToggle(tog, active);
+    if (tog) tog.disabled = !!window._wsTogglePending;
+    const toggleLabel = document.getElementById('toggle-label');
+    if (toggleLabel) toggleLabel.textContent = active ? 'Active' : 'Inactive';
+  }
+
+  function setClientToggleUI(isClient) {
+    const tog = document.getElementById('client-toggle');
+    syncToggle(tog, isClient);
+    if (tog) tog.disabled = !!window._clientTogglePending;
+    const badge = document.getElementById('prof-status-badge');
+    if (badge) {
+      badge.textContent = isClient ? '● Client' : '○ Inactive';
+      badge.classList.toggle('client', isClient);
+      badge.classList.toggle('inactive', !isClient);
     }
   }
 
-  function clientToggleHtml(uid, isClient) {
-    const on = isClient ? 'on' : '';
-    return `<div class="row-client-toggle">
-      <span>Client</span>
-      <div class="ws-toggle ${on}" data-client-toggle="${escapeHtml(uid)}" title="Toggle client status">
-        <div class="ws-toggle-thumb"></div>
-      </div>
-    </div>`;
+  function isInactiveUser(data) {
+    return data && !isDeletedUser(data) && data.isClient !== true;
   }
 
-  function bindClientToggles(container) {
-    container.querySelectorAll('[data-client-toggle]').forEach((tog) => {
-      const uid = tog.dataset.clientToggle;
-      const data = usersMap.get(uid) || {};
-      syncToggle(tog, tog.querySelector('.ws-toggle-thumb'), null, data.isClient === true, '', '');
-      tog.onclick = async (e) => {
-        e.stopPropagation();
-        const user = usersMap.get(uid) || {};
-        const next = !(user.isClient === true);
-        try {
-          await updateDoc(doc(db, 'users', uid), { isClient: next });
-          if (window.showToast) {
-            window.showToast(next ? 'Marked as client ✓' : 'Removed client status');
-          }
-        } catch (err) {
-          console.error(err);
-          if (window.showToast) window.showToast('Could not update client status.');
-        }
-      };
-    });
+  function canAdminSendToUser(uid) {
+    const data = usersMap.get(uid) || {};
+    return data.isClient === true && !isDeletedUser(data);
   }
 
-  async function saveWebsiteUrl(uid, raw) {
-    const trimmed = raw.trim().replace(/^https?:\/\//, '');
-    await updateDoc(doc(db, 'users', uid), { websiteUrl: trimmed || null });
+  function setChatComposerState(uid) {
+    const canSend = uid ? canAdminSendToUser(uid) : false;
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('btn-chat-send');
+    const bar = document.querySelector('.chat-input-bar');
+    if (input) {
+      input.disabled = !canSend;
+      input.placeholder = canSend
+        ? 'Message as Rensé…'
+        : 'This account is inactive — read only';
+      if (!canSend) input.value = '';
+    }
+    if (btn) btn.disabled = !canSend;
+    if (bar) bar.classList.toggle('read-only', !canSend);
   }
+
+  function syncToggle(tog, active) {
+    if (!tog) return;
+    tog.classList.toggle('on', !!active);
+  }
+
+  function resetProfileToggleChrome() {
+    syncToggle(document.getElementById('client-toggle'), false);
+    syncToggle(document.getElementById('ws-toggle'), false);
+    const toggleLabel = document.getElementById('toggle-label');
+    if (toggleLabel) toggleLabel.textContent = 'Inactive';
+    const profilePage = document.getElementById('page-profile');
+    if (profilePage) profilePage.classList.remove('profile-is-deleted', 'profile-is-inactive');
+    const inactiveBanner = document.getElementById('prof-inactive-banner');
+    const deletedBanner = document.getElementById('prof-deleted-banner');
+    if (inactiveBanner) inactiveBanner.hidden = true;
+    if (deletedBanner) deletedBanner.hidden = true;
+  }
+
+  function closeProfileView() {
+    if (unsubProfileUser) {
+      unsubProfileUser();
+      unsubProfileUser = null;
+    }
+    resetProfileToggleChrome();
+  }
+  window.closeProfileView = closeProfileView;
 
   function renderAdminProfile(uid, data) {
-    usersMap.set(uid, data);
+    usersMap.set(uid, { id: uid, ...data });
+
+    const onProfilePage = (window.adminActivePage || 'overview') === 'profile';
+    if (!onProfilePage || activeProfileUid !== uid) {
+      scheduleAdminRefresh();
+      return;
+    }
+
     const name = data.name || 'Client';
     const initials = getInitials(name);
     const email = data.email || '—';
     const phone = data.phone || '—';
     const since = formatJoined(data.createdAt);
     const isClient = data.isClient === true;
-    const hasWebsite = !!data.websiteUrl;
+    const terminated = isDeletedUser(data);
+    const inactive = isInactiveUser(data);
     const websiteActive = data.websiteActive !== false;
 
     const avatar = document.getElementById('prof-avatar');
-    if (avatar) avatar.childNodes[0].textContent = initials;
+    if (avatar) {
+      let initEl = avatar.querySelector('.avatar-initials');
+      if (!initEl) {
+        const dot = avatar.querySelector('.unread-dot');
+        avatar.textContent = '';
+        initEl = document.createElement('span');
+        initEl.className = 'avatar-initials';
+        avatar.appendChild(initEl);
+        if (dot) avatar.appendChild(dot);
+      }
+      initEl.textContent = initials;
+    }
     document.getElementById('prof-name').textContent = name;
     document.getElementById('prof-email').textContent = email;
     document.getElementById('prof-email2').textContent = email;
     document.getElementById('prof-phone').textContent = phone;
-    document.getElementById('prof-since').textContent = since;
-    document.getElementById('prof-status').textContent = isClient ? 'Client' : 'Registered';
+    document.getElementById('prof-since-inline').textContent = 'Since ' + since;
 
-    const websiteSection = document.getElementById('prof-website-section');
-    if (websiteSection) websiteSection.style.display = isClient ? 'block' : 'none';
-
-    syncToggle(
-      document.getElementById('client-toggle'),
-      document.getElementById('client-thumb'),
-      document.getElementById('client-toggle-label'),
-      isClient,
-      'Yes',
-      'No'
-    );
-
-    const urlInput = document.getElementById('prof-website-input');
-    if (urlInput && document.activeElement !== urlInput) {
-      urlInput.value = data.websiteUrl ? String(data.websiteUrl).replace(/^https?:\/\//, '') : '';
+    const badge = document.getElementById('prof-status-badge');
+    if (badge) {
+      badge.textContent = terminated ? '○ Deleted' : isClient ? '● Client' : '○ Inactive';
+      badge.classList.toggle('client', isClient && !terminated);
+      badge.classList.toggle('inactive', !isClient && !terminated);
+      badge.classList.toggle('deleted', terminated);
     }
 
-    syncToggle(
-      document.getElementById('ws-toggle'),
-      document.getElementById('ws-thumb'),
-      document.getElementById('toggle-label'),
-      hasWebsite && websiteActive,
-      'Active',
-      'Inactive'
-    );
+    const clientToggle = document.getElementById('client-toggle');
+    if (clientToggle) {
+      clientToggle.disabled = terminated || inactive;
+      clientToggle.style.display = terminated || inactive ? 'none' : '';
+      syncToggle(clientToggle, terminated ? false : isClient);
+    }
+
+    const profilePage = document.getElementById('page-profile');
+    const deletedBanner = document.getElementById('prof-deleted-banner');
+    const inactiveBanner = document.getElementById('prof-inactive-banner');
+    if (profilePage) {
+      profilePage.classList.toggle('profile-is-deleted', terminated);
+      profilePage.classList.toggle('profile-is-inactive', inactive);
+    }
+    if (deletedBanner) deletedBanner.hidden = !terminated;
+    if (inactiveBanner) inactiveBanner.hidden = !inactive;
+
+    const websiteSection = document.getElementById('prof-website-section');
+    const progressSection = document.getElementById('prof-progress-section');
+    const publishSection = document.getElementById('prof-publish-section');
+    if (websiteSection) websiteSection.style.display = isClient && !terminated ? 'block' : 'none';
+    if (progressSection) progressSection.style.display = isClient && !terminated ? 'block' : 'none';
+    if (publishSection) publishSection.style.display = isClient && !terminated ? '' : 'none';
+
+    const sendInvBtn = document.getElementById('btn-send-invoice');
+    if (sendInvBtn) sendInvBtn.style.display = isClient && !terminated ? '' : 'none';
+
+    if (!window._clientTogglePending && !terminated && !inactive) setClientToggleUI(isClient);
+
+    const urlInput = document.getElementById('prof-website-input');
+    if (urlInput) {
+      if (document.activeElement !== urlInput) {
+        urlInput.value = data.websiteUrl ? String(data.websiteUrl).replace(/^https?:\/\//, '') : '';
+      }
+      urlInput.disabled = !isClient || terminated;
+    }
+
+    const updateMsg = document.getElementById('update-msg');
+    if (updateMsg) updateMsg.disabled = !isClient || terminated;
+
+    if (!window._wsTogglePending && !terminated) {
+      if (isClient) setWebsiteToggleUI(websiteActive);
+      else setWebsiteToggleUI(false);
+    }
 
     const stage = Number.isInteger(data.websiteStage) ? data.websiteStage : -1;
+    const pct = getStageProgressPercent(stage);
+    const fill = document.getElementById('prof-progress-fill');
+    const pctEl = document.getElementById('prof-progress-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
+
     const stepsEl = document.getElementById('prof-ws-steps');
-    if (stepsEl) {
+    if (stepsEl && stepsEl.dataset.stage !== String(stage)) {
+      stepsEl.dataset.stage = String(stage);
       renderWebsiteSteps(stepsEl, stage, {
-        labelClass: 'ws-step-label',
-        selectable: true,
+        variant: 'admin',
         onSelect: async (idx) => {
+          if (isDeletedUser(data) || !isClient) return;
+          stepsEl.dataset.stage = String(idx);
           try {
             await updateDoc(doc(db, 'users', uid), { websiteStage: idx });
-            if (window.showToast) {
-              window.showToast(`Stage set to "${WEBSITE_STAGES[idx]}" ✓`);
-            }
+            if (window.showToast) window.showToast(`Stage set to "${WEBSITE_STAGES[idx]}" ✓`);
           } catch (err) {
             console.error(err);
             if (window.showToast) window.showToast('Could not update stage.');
@@ -663,259 +1068,379 @@
   window.openProfile = function openProfile(uid, returnTab) {
     activeProfileUid = uid;
     window.activeProfileUid = uid;
-    window.profileReturnTab = returnTab || window.profileReturnTab || 'clients';
+    window.profileReturnTab = returnTab || window.profileReturnTab || 'list';
 
     const active = document.querySelector('.page.active');
     if (active) window.profileReturnTab = active.id.replace('page-', '');
+
+    switchTab('profile');
 
     if (unsubProfileUser) unsubProfileUser();
     unsubProfileUser = onSnapshot(doc(db, 'users', uid), (snap) => {
       if (!snap.exists()) return;
       renderAdminProfile(uid, snap.data());
     }, (err) => console.error('Profile user error:', err));
-
-    switchTab('profile');
   };
 
   window.toggleClientStatus = async function toggleClientStatus() {
-    if (!activeProfileUid) return;
+    if (!activeProfileUid || window._clientTogglePending) return;
     const data = usersMap.get(activeProfileUid) || {};
-    const next = !(data.isClient === true);
+    if (isDeletedUser(data) || isInactiveUser(data)) return;
+    const currentlyClient = data.isClient === true;
+    const next = !currentlyClient;
+
+    window._clientTogglePending = true;
+    setClientToggleUI(next);
+    usersMap.set(activeProfileUid, { ...data, id: activeProfileUid, isClient: next });
+
     try {
       await updateDoc(doc(db, 'users', activeProfileUid), { isClient: next });
-      if (window.showToast) {
-        window.showToast(next ? 'Marked as client ✓' : 'Removed client status');
-      }
     } catch (err) {
       console.error(err);
+      setClientToggleUI(currentlyClient);
+      usersMap.set(activeProfileUid, { ...data, id: activeProfileUid, isClient: currentlyClient });
       if (window.showToast) window.showToast('Could not update client status.');
+    } finally {
+      window._clientTogglePending = false;
+      const tog = document.getElementById('client-toggle');
+      if (tog) tog.disabled = false;
     }
   };
 
   window.removeAdminUser = async function removeAdminUser() {
     if (!activeProfileUid) return;
     const name = document.getElementById('prof-name')?.textContent || 'this user';
-    if (!confirm(`Remove ${name} and all their data? This cannot be undone.`)) return;
+    if (!confirm(`Mark ${name} as deleted? Their record will stay in Accounts for reference.`)) return;
     const uid = activeProfileUid;
     try {
-      await deleteUserData(uid);
-      usersMap.delete(uid);
-      if (unsubProfileUser) unsubProfileUser();
-      activeProfileUid = null;
-      window.activeProfileUid = null;
-      if (window.showToast) window.showToast('User removed ✓');
+      await deleteUserData(uid, { keepRecord: true });
+      if (window.showToast) window.showToast('User marked as deleted ✓');
       refreshAdminUI();
-      switchTab(window.profileReturnTab || 'accounts');
+      switchTab(window.profileReturnTab || 'list');
     } catch (err) {
       console.error(err);
-      if (window.showToast) window.showToast('Could not remove user.');
+      if (window.showToast) window.showToast('Could not update user.');
     }
   };
 
   window.toggleWebsite = async function toggleWebsite() {
-    if (!activeProfileUid) return;
+    if (!activeProfileUid || window._wsTogglePending) return;
     const data = usersMap.get(activeProfileUid) || {};
-    const next = data.websiteActive === false;
+    if (isDeletedUser(data) || data.isClient !== true) return;
+    const currentlyActive = data.websiteActive !== false;
+    const next = !currentlyActive;
+
+    window._wsTogglePending = true;
+    setWebsiteToggleUI(next);
+    usersMap.set(activeProfileUid, { ...data, id: activeProfileUid, websiteActive: next });
+
     try {
       await updateDoc(doc(db, 'users', activeProfileUid), { websiteActive: next });
-      if (window.showToast) {
-        window.showToast('Website marked as ' + (next ? 'Active ✓' : 'Inactive'));
-      }
     } catch (err) {
       console.error(err);
+      setWebsiteToggleUI(currentlyActive);
+      usersMap.set(activeProfileUid, { ...data, id: activeProfileUid, websiteActive: currentlyActive });
       if (window.showToast) window.showToast('Could not update website status.');
+    } finally {
+      window._wsTogglePending = false;
+      const tog = document.getElementById('ws-toggle');
+      if (tog) tog.disabled = false;
     }
   };
 
-  function refreshAdminUI() {
-    renderAdminUserLists();
-    renderChatSidebar();
+  async function saveWebsiteUrl(uid, raw) {
+    const data = usersMap.get(uid) || {};
+    if (isDeletedUser(data) || data.isClient !== true) return;
+    const trimmed = raw.trim().replace(/^https?:\/\//, '');
+    await updateDoc(doc(db, 'users', uid), { websiteUrl: trimmed || null });
   }
 
-  function renderAdminUserLists() {
-    const allUsers = [...usersMap.values()].filter((u) => u?.id);
+  function updateDashboardTiles(clients, accounts, totalUnread) {
+    const clientTile = document.getElementById('tile-clients');
+    const accountTile = document.getElementById('tile-accounts');
+    const chatTile = document.getElementById('tile-chat');
+    const invoiceTile = document.getElementById('tile-invoices');
 
-    const accounts = allUsers
-      .filter(isRegisteredAccount)
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-
-    const clients = allUsers
-      .filter(isClientUser)
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-
-    document.getElementById('ov-accounts').textContent = String(accounts.length);
     document.getElementById('ov-clients').textContent = String(clients.length);
+    document.getElementById('ov-accounts').textContent = String(accounts.length);
+    const ovInv = document.getElementById('ov-invoices');
+    if (ovInv) ovInv.textContent = String(clients.length);
+    const ovChats = document.getElementById('ov-chats');
+    ovChats.textContent = String(totalUnread);
 
-    const accountsList = document.getElementById('accounts-list');
-    if (!accounts.length) {
-      accountsList.innerHTML = usersListLoaded
-        ? '<p class="empty-state">No registered accounts yet.</p>'
-        : '<p class="empty-state">Loading accounts…</p>';
-    } else {
-      accountsList.innerHTML = accounts.map((u) => {
-        const name = u.name || 'Account';
-        const email = u.email || '—';
-        const since = formatJoined(u.createdAt);
-        const isClient = u.isClient === true;
-        return `<div class="row-card">
-          <div class="row-main">
-            <div class="row-avatar">${escapeHtml(getInitials(name))}</div>
-            <div class="row-info">
-              <div class="row-name">${escapeHtml(name)}</div>
-              <div class="row-meta">${escapeHtml(email)} · Joined ${since}</div>
-            </div>
-            <div class="row-actions">
-              ${clientToggleHtml(u.id, isClient)}
-              <span class="pill ${isClient ? 'pill-paid' : 'pill-new'}">${isClient ? 'Client' : 'Registered'}</span>
-              <button type="button" class="btn-sm btn-outline" data-view-user="${escapeHtml(u.id)}">View</button>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
-      bindClientToggles(accountsList);
-      accountsList.querySelectorAll('[data-view-user]').forEach((btn) => {
-        btn.addEventListener('click', () => window.openProfile(btn.dataset.viewUser, 'accounts'));
-      });
-    }
+    clientTile?.classList.toggle('active', clients.length > 0);
+    accountTile?.classList.toggle('active', accounts.length > 0);
+    chatTile?.classList.toggle('active', totalUnread > 0);
+    invoiceTile?.classList.toggle('active', clients.length > 0);
+  }
 
-    const clientsList = document.getElementById('clients-list');
-    if (!clients.length) {
-      clientsList.innerHTML = '<p class="empty-state">No clients yet.</p>';
-    } else {
-      clientsList.innerHTML = clients.map((u) => {
-        const name = u.name || 'Client';
-        const email = u.email || '—';
-        const since = formatJoined(u.createdAt);
-        const stage = stageLabel(u);
-        const hasWebsite = !!u.websiteUrl;
-        const active = hasWebsite && u.websiteActive !== false;
-        const pill = active ? 'pill-paid' : (hasWebsite ? 'pill-due' : 'pill-new');
-        const pillText = active ? 'Active' : (hasWebsite ? 'Inactive' : 'In progress');
-        return `<div class="row-card">
-          <div class="row-main">
-            <div class="row-avatar">${escapeHtml(getInitials(name))}</div>
-            <div class="row-info">
-              <div class="row-name">${escapeHtml(name)}</div>
-              <div class="row-meta">${escapeHtml(email)} · ${escapeHtml(stage)}</div>
-            </div>
-            <div class="row-actions">
-              ${clientToggleHtml(u.id, true)}
-              <span class="pill ${pill}">${pillText}</span>
-              <button type="button" class="btn-sm btn-outline" data-view-user="${escapeHtml(u.id)}">View</button>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
-      bindClientToggles(clientsList);
-      clientsList.querySelectorAll('[data-view-user]').forEach((btn) => {
-        btn.addEventListener('click', () => window.openProfile(btn.dataset.viewUser, 'clients'));
-      });
+  function getTotalUnread() {
+    let total = 0;
+    for (const d of lastConversationsSnap?.docs || []) {
+      if (d.data()?.accountDeleted) continue;
+      total += d.data()?.unreadByAdmin || 0;
     }
+    return total;
+  }
+
+  function renderUserCard(u) {
+    const name = u.name || 'User';
+    const email = u.email || '—';
+    const isClient = u.isClient === true && !isDeletedUser(u);
+    const status = getUserStatusBadge(u);
+    return `<div class="user-card${isClient ? ' is-client' : ''}${isDeletedUser(u) ? ' is-deleted' : ''}">
+      <div class="user-avatar">${escapeHtml(getInitials(name))}</div>
+      <div class="user-info">
+        <div class="user-name-row">
+          ${profileNameLink(u.id, name, 'list', 'user-name')}
+          <span class="user-badge ${status.cls}">${status.text}</span>
+        </div>
+        <div class="user-email">${escapeHtml(email)}</div>
+      </div>
+      <button type="button" class="btn-view" data-view-user="${escapeHtml(u.id)}">View</button>
+    </div>`;
+  }
+
+  function renderAdminUserLists(force = false) {
+    updateDashboardCounts();
 
     if (activeProfileUid && !usersMap.has(activeProfileUid)) {
-      if (unsubProfileUser) unsubProfileUser();
+      closeProfileView();
       activeProfileUid = null;
       window.activeProfileUid = null;
       if (document.getElementById('page-profile')?.classList.contains('active')) {
-        switchTab(window.profileReturnTab || 'overview');
+        switchTab(window.profileReturnTab || 'list');
       }
-    } else if (activeProfileUid && usersMap.has(activeProfileUid)) {
-      renderAdminProfile(activeProfileUid, usersMap.get(activeProfileUid));
     }
+
+    const page = window.adminActivePage || 'overview';
+    if (page !== 'list' && !force) return;
+
+    const filter = window.listFilter || 'all';
+    const eyebrows = { all: 'Accounts', clients: 'Clients', registered: 'Accounts' };
+    const titles = { all: 'All Accounts', clients: 'Paid Clients', registered: 'Registered Users' };
+    const eyebrowEl = document.getElementById('list-eyebrow');
+    const titleEl = document.getElementById('list-title');
+    if (eyebrowEl) eyebrowEl.textContent = eyebrows[filter] || 'Accounts';
+    if (titleEl) titleEl.textContent = titles[filter] || 'All Accounts';
+
+    const listEl = document.getElementById('user-list');
+    if (!listEl) return;
+
+    const allUsers = [...usersMap.values()].filter((u) => u?.id);
+    const allAccounts = allUsers.filter(isAnyAccount).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const clients = allUsers.filter(isClientUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+    const registeredOnly = allAccounts.filter((u) => !isClientUser(u));
+    const groups = filter === 'clients'
+      ? [{ label: 'Clients', users: clients }]
+      : filter === 'registered'
+      ? [{ label: 'Inactive', users: registeredOnly }]
+      : [{ label: 'All Accounts', users: allAccounts }];
+
+    const hasAny = groups.some((g) => g.users.length > 0);
+    const listSignature = filter + '|' + groups.map((g) =>
+      g.label + ':' + g.users.map((u) => `${u.id}:${u.isClient ? 1 : 0}:${u.deleted ? 1 : 0}:${u.name || ''}`).join(',')
+    ).join(';');
+
+    if (force || listSignature !== lastListSignature) {
+      lastListSignature = listSignature;
+      if (!hasAny) {
+        listEl.innerHTML = `<p class="empty-state">${usersListLoaded ? 'No users yet.' : 'Loading…'}</p>`;
+      } else {
+        listEl.innerHTML = groups.filter((g) => g.users.length).map((g) => `
+          <div>
+            <p class="section-label">${escapeHtml(g.label)}</p>
+            <div class="user-cards">${g.users.map((u) => renderUserCard(u)).join('')}</div>
+          </div>`).join('');
+        listEl.querySelectorAll('[data-view-user]').forEach((btn) => {
+          btn.addEventListener('click', () => window.openProfile(btn.dataset.viewUser, 'list'));
+        });
+        bindProfileLinks(listEl);
+      }
+    }
+
+    if (window.adminActivePage === 'invoices' && window.renderInvoices) window.renderInvoices();
+  }
+
+  function updateDashboardCounts() {
+    const allUsers = [...usersMap.values()].filter((u) => u?.id);
+    const allAccounts = allUsers.filter(isAnyAccount);
+    const clients = allUsers.filter(isClientUser);
+    window.adminAllAccountsList = allAccounts;
+    window.adminUsersList = allAccounts;
+    updateDashboardTiles(clients, allAccounts, getTotalUnread());
+  }
+
+  window.renderAdminUserLists = renderAdminUserLists;
+  window.updateDashboardCounts = updateDashboardCounts;
+
+  function refreshAdminUI() {
+    updateDashboardCounts();
+    const page = window.adminActivePage || 'overview';
+    if (page === 'list') {
+      renderAdminUserLists(true);
+    }
+    if (page === 'invoices' && window.renderInvoices) {
+      window.renderInvoices();
+    }
+    if (page === 'chat') {
+      renderChatTabs();
+    } else {
+      updateChatUnreadIndicators();
+    }
+  }
+  window.refreshAdminUI = refreshAdminUI;
+
+  function scheduleAdminRefresh() {
+    if (refreshFrame) {
+      refreshAgain = true;
+      return;
+    }
+    refreshFrame = requestAnimationFrame(() => {
+      refreshFrame = null;
+      refreshAdminUI();
+      if (refreshAgain) {
+        refreshAgain = false;
+        scheduleAdminRefresh();
+      }
+    });
+  }
+
+  function rebuildUsersMap() {
+    let optimisticOverlay = null;
+    if (activeProfileUid && usersMap.has(activeProfileUid)) {
+      const cur = usersMap.get(activeProfileUid);
+      if (window._wsTogglePending || window._clientTogglePending) {
+        optimisticOverlay = { uid: activeProfileUid };
+        if (window._wsTogglePending) optimisticOverlay.websiteActive = cur.websiteActive;
+        if (window._clientTogglePending) optimisticOverlay.isClient = cur.isClient;
+      }
+    }
+
+    usersMap.clear();
+    for (const [id, data] of collectionUsers) {
+      if (isAdminAccount({ ...data, id })) continue;
+      usersMap.set(id, { id, ...data });
+    }
+    enrichUsersFromConversations();
+    applyDeletedFromConversations();
+
+    if (optimisticOverlay) {
+      const data = usersMap.get(optimisticOverlay.uid) || {};
+      usersMap.set(optimisticOverlay.uid, { ...data, ...optimisticOverlay });
+    }
+  }
+
+  function enrichUsersFromConversations() {
+    if (!lastConversationsSnap) return;
+    for (const d of lastConversationsSnap.docs) {
+      const uid = d.id;
+      const convo = d.data();
+      if (usersMap.has(uid)) continue;
+      if (convo.accountDeleted) {
+        usersMap.set(uid, {
+          id: uid,
+          deleted: true,
+          name: convo.clientName || 'User',
+          email: convo.clientEmail || '',
+        });
+        continue;
+      }
+      if (!convo.clientName && !convo.clientEmail) continue;
+      usersMap.set(uid, {
+        id: uid,
+        name: convo.clientName || 'User',
+        email: convo.clientEmail || '',
+        createdAt: convo.updatedAt || convo.createdAt || null,
+      });
+    }
+  }
+
+  function scheduleUserBackfill() {
+    clearTimeout(backfillTimer);
+    backfillTimer = setTimeout(backfillMissingUserDocs, 400);
+  }
+
+  async function backfillMissingUserDocs() {
+    if (!lastConversationsSnap) return;
+    const uids = [];
+    for (const d of lastConversationsSnap.docs) {
+      if (d.data()?.accountDeleted) continue;
+      const uid = d.id;
+      if (collectionUsers.has(uid) || backfilledUids.has(uid)) continue;
+      uids.push(uid);
+    }
+    if (!uids.length) return;
+
+    let changed = false;
+    for (const uid of uids) {
+      backfilledUids.add(uid);
+      try {
+        const userSnap = await getDoc(doc(db, 'users', uid));
+        if (!userSnap.exists()) continue;
+        const data = { id: uid, ...userSnap.data() };
+        if (isAdminAccount(data)) continue;
+        usersMap.set(uid, data);
+        changed = true;
+      } catch (err) {
+        console.error('Could not backfill user', uid, err);
+      }
+    }
+    if (changed) scheduleAdminRefresh();
   }
 
   function syncUsersFromCollection(snap) {
     collectionUsers.clear();
-    snap.docs.forEach((d) => {
-      collectionUsers.set(d.id, { id: d.id, ...d.data() });
-    });
+    snap.docs.forEach((d) => collectionUsers.set(d.id, { id: d.id, ...d.data() }));
     usersListLoaded = true;
-    mergeUsersAndRefresh();
+    rebuildUsersMap();
+    scheduleAdminRefresh();
+    scheduleUserBackfill();
   }
 
-  async function mergeUsersAndRefresh() {
-    if (mergeInProgress) return;
-    mergeInProgress = true;
-    try {
-      usersMap.clear();
-      for (const [id, data] of collectionUsers) {
-        if (data.deleted !== true) usersMap.set(id, data);
-      }
-      await ensureKnownUsersFromConversations();
-      refreshAdminUI();
-      await purgeOrphanedConversations();
-    } finally {
-      mergeInProgress = false;
+  function applyDeletedFromConversations() {
+    if (!lastConversationsSnap) return;
+    for (const d of lastConversationsSnap.docs) {
+      if (!d.data()?.accountDeleted) continue;
+      const uid = d.id;
+      const convo = d.data();
+      const existing = usersMap.get(uid) || { id: uid };
+      usersMap.set(uid, {
+        ...existing,
+        id: uid,
+        deleted: true,
+        deletedAt: existing.deletedAt || convo.deletedAt || new Date().toISOString(),
+        isClient: false,
+        name: existing.name || convo.clientName || 'User',
+        email: existing.email || convo.clientEmail || '',
+        subscriptionPlan: null,
+        subscriptionAmount: null,
+      });
     }
   }
 
-  async function ensureKnownUsersFromConversations() {
-    if (!lastConversationsSnap) return;
-
-    for (const d of lastConversationsSnap.docs) {
-      const uid = d.id;
-      const convo = d.data();
-      if (convo.accountDeleted) continue;
-      if (usersMap.has(uid)) continue;
-
-      const userSnap = await getDoc(doc(db, 'users', uid));
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        if (data.deleted === true) continue;
-        usersMap.set(uid, { id: uid, ...data });
-        continue;
-      }
-
-      if (!convo.clientName && !convo.clientEmail) continue;
-
-      const profile = {
-        name: convo.clientName || 'Client',
-        email: convo.clientEmail || '',
-        createdAt: new Date().toISOString()
-      };
-      try {
-        await setDoc(doc(db, 'users', uid), profile, { merge: true });
-        usersMap.set(uid, { id: uid, ...profile });
-      } catch (err) {
-        console.error('Could not create profile for', uid, err);
-      }
-    }
+  function schedulePurgeCheck() {
+    clearTimeout(purgeTimer);
+    purgeTimer = setTimeout(runPurgeOrphanedOnce, 10000);
   }
 
-  async function purgeOrphanedConversations() {
+  async function runPurgeOrphanedOnce() {
     if (!lastConversationsSnap) return;
-
     for (const d of lastConversationsSnap.docs) {
       const uid = d.id;
       const convo = d.data();
-      if (purgingUids.has(uid)) continue;
-
-      const userSnap = await getDoc(doc(db, 'users', uid));
-      if (userSnap.exists()) {
-        if (!usersMap.has(uid)) {
-          usersMap.set(uid, { id: uid, ...userSnap.data() });
-          refreshAdminUI();
-        }
-        continue;
-      }
-
-      if (!convo.accountDeleted) continue;
-
+      if (!convo.accountDeleted || purgingUids.has(uid)) continue;
+      if (collectionUsers.has(uid)) continue;
       purgingUids.add(uid);
       try {
         await deleteConversationData(uid);
-        try {
-          await deleteDoc(doc(db, 'users', uid));
-        } catch (_) {}
-        usersMap.delete(uid);
       } catch (err) {
         console.error('Could not purge deleted conversation:', uid, err);
       } finally {
         purgingUids.delete(uid);
       }
     }
-
-    refreshAdminUI();
   }
 
   function startAdminUsers() {
@@ -924,26 +1449,84 @@
       console.error('Users error:', err);
       usersListLoaded = true;
       if (window.showToast) window.showToast('Could not load accounts list. Check Firestore rules.');
-      mergeUsersAndRefresh();
+      scheduleAdminRefresh();
     });
   }
 
-  function renderChatSidebar() {
-    const sidebar = document.getElementById('chat-sidebar');
-    conversationsMap.clear();
-
-    const docs = (lastConversationsSnap?.docs || []).filter((d) => {
+  function getFilteredConversationDocs() {
+    return (lastConversationsSnap?.docs || []).filter((d) => {
       if (d.data()?.accountDeleted) return false;
       return usersMap.has(d.id);
     });
+  }
+
+  function getChatTabsSignature(docs) {
+    return docs.map((d) => {
+      const c = d.data();
+      const u = usersMap.get(d.id) || {};
+      return [
+        d.id,
+        c.unreadByAdmin || 0,
+        u.isClient ? 1 : 0,
+        u.deleted ? 1 : 0,
+        c.lastMessage || '',
+        activeClientUid === d.id ? 1 : 0,
+      ].join(':');
+    }).join('|');
+  }
+
+  function updateChatUnreadIndicators() {
+    const docs = getFilteredConversationDocs();
+    let totalUnread = 0;
+    for (const d of docs) {
+      totalUnread += d.data().unreadByAdmin || 0;
+    }
+
+    const ovChats = document.getElementById('ov-chats');
+    if (ovChats) ovChats.textContent = String(totalUnread);
+
+    const topbarDot = document.getElementById('topbar-unread');
+    const page = window.adminActivePage || 'overview';
+    const showTopbar = totalUnread > 0 && page !== 'overview' && page !== 'chat';
+    if (topbarDot) {
+      topbarDot.style.display = showTopbar ? 'flex' : 'none';
+      if (showTopbar) topbarDot.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
+    }
+    window.hasUnreadMessages = totalUnread > 0;
+
+    const chatTile = document.getElementById('tile-chat');
+    chatTile?.classList.toggle('active', totalUnread > 0);
+  }
+
+  function renderChatTabs() {
+    const tabsEl = document.getElementById('chat-tabs');
+    if (!tabsEl) return;
+
+    const docs = getFilteredConversationDocs();
+    const signature = getChatTabsSignature(docs);
+    updateChatUnreadIndicators();
+
+    if (signature === lastChatTabsSignature && tabsEl.querySelector('.chat-tab')) {
+      if (activeClientUid) {
+        const c = conversationsMap.get(activeClientUid) || {};
+        const userData = usersMap.get(activeClientUid) || {};
+        const inactiveThread = userData.isClient !== true || isDeletedUser(userData);
+        const labelEl = document.getElementById('chat-active-label');
+        if (labelEl) {
+          labelEl.classList.toggle('inactive-thread', inactiveThread);
+          const n = c.clientName || userData.name || 'Client';
+          labelEl.innerHTML = profileNameLink(activeClientUid, n, 'chat');
+          bindProfileLinks(labelEl);
+        }
+      }
+      return;
+    }
+    lastChatTabsSignature = signature;
+    conversationsMap.clear();
 
     if (!docs.length) {
-      sidebar.innerHTML = '<p class="empty-state" style="padding:2rem 1rem;">No conversations yet.</p>';
-      const ovChats = document.getElementById('ov-chats');
-      ovChats.textContent = '0';
-      ovChats.classList.remove('has-unread');
-      document.getElementById('topbar-unread').style.display = 'none';
-      window.hasUnreadMessages = false;
+      tabsEl.innerHTML = '<p class="empty-state" style="padding:1rem 0;font-size:13px;">No conversations yet.</p>';
+      document.getElementById('chat-active-label').textContent = 'No conversations';
       if (activeClientUid && !usersMap.has(activeClientUid)) {
         activeClientUid = null;
         window.activeClientUid = null;
@@ -951,48 +1534,104 @@
       return;
     }
 
-    let totalUnread = 0;
-    sidebar.innerHTML = '';
+    tabsEl.innerHTML = '';
     docs.forEach((d) => {
       const c = d.data();
       conversationsMap.set(d.id, c);
-      totalUnread += c.unreadByAdmin || 0;
+      const userData = usersMap.get(d.id) || {};
+      const name = c.clientName || userData.name || 'Client';
+      const isClient = userData.isClient === true && !isDeletedUser(userData);
+      const inactive = !isClient;
+      const active = d.id === activeClientUid;
+      const unread = c.unreadByAdmin > 0;
 
-      const el = document.createElement('div');
-      el.className = 'chat-item' + (d.id === activeClientUid ? ' active' : '');
-      el.dataset.uid = d.id;
-      const unread = c.unreadByAdmin > 0 ? '<div class="chat-unread"></div>' : '';
-      el.innerHTML = `
-        <div class="chat-avatar">${escapeHtml(getInitials(c.clientName))}</div>
-        <div class="chat-item-info">
-          <div class="chat-item-name">${escapeHtml(c.clientName || 'Client')}</div>
-          <div class="chat-item-preview">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'chat-tab' + (inactive ? ' inactive' : '') + (active ? ' active' : '');
+      tab.dataset.uid = d.id;
+      tab.dataset.inactive = inactive ? '1' : '0';
+      tab.innerHTML = `
+        <div class="chat-tab-avatar-wrap">
+          <div class="chat-tab-avatar">${escapeHtml(getInitials(name))}</div>
+          ${isClient ? '<div class="chat-tab-dot"></div>' : ''}
+          ${unread && !active ? '<div class="chat-tab-unread"></div>' : ''}
         </div>
-        ${unread}`;
-      el.addEventListener('click', () => selectConversation(d.id));
-      sidebar.appendChild(el);
+        <div class="chat-tab-info">
+          ${profileNameLink(d.id, name, 'chat', 'chat-tab-name')}
+          <div class="chat-tab-preview">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
+        </div>`;
+      tab.addEventListener('click', () => selectConversation(d.id));
+      tabsEl.appendChild(tab);
     });
+
+    bindProfileLinks(tabsEl);
 
     if (activeClientUid && !usersMap.has(activeClientUid)) {
       activeClientUid = null;
       window.activeClientUid = null;
     }
 
-    const ovChats = document.getElementById('ov-chats');
-    ovChats.textContent = String(totalUnread);
-    ovChats.classList.toggle('has-unread', totalUnread > 0);
-
-    const topbarDot = document.getElementById('topbar-unread');
-    const page = window.adminActivePage || 'overview';
-    const showTopbar = totalUnread > 0 && page !== 'overview' && page !== 'chat';
-    topbarDot.style.display = showTopbar ? 'flex' : 'none';
-    if (showTopbar) topbarDot.textContent = totalUnread > 9 ? '9+' : String(totalUnread);
-    window.hasUnreadMessages = totalUnread > 0;
+    if (activeClientUid) {
+      const c = conversationsMap.get(activeClientUid) || {};
+      const userData = usersMap.get(activeClientUid) || {};
+      const inactiveThread = userData.isClient !== true || isDeletedUser(userData);
+      const labelEl = document.getElementById('chat-active-label');
+      labelEl.classList.toggle('inactive-thread', inactiveThread);
+      const n = c.clientName || userData.name || 'Client';
+      labelEl.innerHTML = profileNameLink(activeClientUid, n, 'chat');
+      bindProfileLinks(labelEl);
+    }
   }
+  window.renderChatTabs = renderChatTabs;
+  window.updateChatUnreadIndicators = updateChatUnreadIndicators;
+
+  window.SUBSCRIPTION_PLANS = SUBSCRIPTION_PLANS;
+  window.getSubscriptionPlanById = getPlanById;
+
+  window.updateUserSubscription = async function updateUserSubscription(uid, planId) {
+    if (!uid) return;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    const data = snap.exists() ? snap.data() : {};
+    if (isDeletedUser(data)) {
+      throw new Error('Cannot change billing for a deleted account');
+    }
+    if (data.isClient !== true) {
+      throw new Error('Enable client status before changing billing');
+    }
+    if (!planId) {
+      await updateDoc(ref, {
+        isClient: false,
+        subscriptionPlan: deleteField(),
+        subscriptionAmount: deleteField(),
+        subscriptionCurrency: deleteField(),
+        subscriptionRenewAt: deleteField(),
+      });
+      return;
+    }
+    const plan = getPlanById(planId);
+    if (!plan) return;
+    const payload = {
+      isClient: true,
+      subscriptionPlan: plan.id,
+      subscriptionAmount: plan.amount,
+      subscriptionCurrency: plan.currency,
+    };
+    if (!data.subscriptionRenewAt && !data.renewDate) {
+      const renew = new Date();
+      renew.setFullYear(renew.getFullYear() + 1);
+      payload.subscriptionRenewAt = renew.toISOString();
+    }
+    await updateDoc(ref, payload);
+  };
 
   function showApp() {
+    if (appStarted) return;
+    appStarted = true;
     document.getElementById('app').style.display = 'block';
-    initStats();
+    window.adminActivePage = window.adminActivePage || 'overview';
+    if (window.updateGreeting) window.updateGreeting();
+    if (window.initAutoMessages) window.initAutoMessages();
     startAdminUsers();
     startAdminChat();
 
@@ -1000,6 +1639,8 @@
     if (urlInput) {
       urlInput.addEventListener('change', async () => {
         if (!activeProfileUid) return;
+        const data = usersMap.get(activeProfileUid) || {};
+        if (isDeletedUser(data) || data.isClient !== true) return;
         try {
           await saveWebsiteUrl(activeProfileUid, urlInput.value);
           if (window.showToast) window.showToast('Website URL saved ✓');
@@ -1012,18 +1653,9 @@
   }
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-    if (!(await isEmailVerified(user))) {
-      window.location.href = 'login.html';
-      return;
-    }
-    if (!(await isAdminUser(user))) {
-      window.location.href = 'profile.html';
-      return;
-    }
+    if (!user) { window.location.href = 'login.html'; return; }
+    if (!(await isEmailVerified(user))) { window.location.href = 'login.html'; return; }
+    if (!(await isAdminUser(user))) { window.location.href = 'profile.html'; return; }
     showApp();
   });
 
@@ -1036,7 +1668,10 @@
     if (unsubConversations) unsubConversations();
     unsubConversations = subscribeToConversations((snap) => {
       lastConversationsSnap = snap;
-      mergeUsersAndRefresh();
+      rebuildUsersMap();
+      scheduleAdminRefresh();
+      scheduleUserBackfill();
+      schedulePurgeCheck();
     });
   }
 
@@ -1044,23 +1679,28 @@
     activeClientUid = clientUid;
     window.activeClientUid = clientUid;
     const c = conversationsMap.get(clientUid) || {};
-    const name = c.clientName || 'Client';
-    const initials = getInitials(name);
+    const userData = usersMap.get(clientUid) || {};
+    const name = c.clientName || userData.name || 'Client';
+    const inactiveThread = userData.isClient !== true || isDeletedUser(userData);
 
-    document.querySelectorAll('.chat-item').forEach((i) => {
-      i.classList.toggle('active', i.dataset.uid === clientUid);
-      if (i.dataset.uid === clientUid) i.querySelector('.chat-unread')?.remove();
+    document.querySelectorAll('.chat-tab').forEach((tab) => {
+      const isActive = tab.dataset.uid === clientUid;
+      tab.classList.toggle('active', isActive);
+      if (isActive) tab.querySelector('.chat-tab-unread')?.remove();
     });
 
-    document.getElementById('chat-name').textContent = name;
-    document.getElementById('chat-av').textContent = initials;
-    document.getElementById('chat-status').textContent = '';
-    document.getElementById('chat-input').disabled = false;
+    const labelEl = document.getElementById('chat-active-label');
+    labelEl.classList.toggle('inactive-thread', inactiveThread);
+    labelEl.innerHTML = profileNameLink(clientUid, name, 'chat');
+    bindProfileLinks(labelEl);
+    setChatComposerState(clientUid);
+    lastChatTabsSignature = getChatTabsSignature(getFilteredConversationDocs());
 
     if (unsubMessages) unsubMessages();
     unsubMessages = subscribeToMessages(clientUid, (snap) => {
       const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderAdminMessages(document.getElementById('chat-messages'), messages);
+      renderAdminMessages(document.getElementById('chat-messages'), messages, clientUid);
+      bindProfileLinks(document.getElementById('chat-messages'));
       if (window.adminChatVisible) markConversationRead(clientUid, 'admin');
     });
 
@@ -1075,27 +1715,21 @@
       return;
     }
     for (const [uid, c] of conversationsMap.entries()) {
-      if (c.unreadByAdmin > 0) {
-        selectConversation(uid);
-        return;
-      }
+      if (c.unreadByAdmin > 0) { selectConversation(uid); return; }
     }
     const first = conversationsMap.keys().next().value;
     if (first) selectConversation(first);
   };
 
-  window.goToChat = function goToChat(name) {
+  window.goToChat = function goToChat() {
     switchTab('chat');
     if (activeProfileUid && conversationsMap.has(activeProfileUid)) {
       selectConversation(activeProfileUid);
       return;
     }
-    const lookup = name || document.getElementById('prof-name')?.textContent;
+    const lookup = document.getElementById('prof-name')?.textContent;
     for (const [uid, c] of conversationsMap.entries()) {
-      if (c.clientName === lookup) {
-        selectConversation(uid);
-        return;
-      }
+      if (c.clientName === lookup) { selectConversation(uid); return; }
     }
   };
 
@@ -1103,27 +1737,25 @@
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text || !activeClientUid) return;
-
+    if (!canAdminSendToUser(activeClientUid)) {
+      if (window.showToast) window.showToast('Cannot send messages to inactive accounts.');
+      return;
+    }
     const user = auth.currentUser;
     if (!user) return;
-
     const c = conversationsMap.get(activeClientUid) || {};
     input.disabled = true;
     try {
       await sendChatMessage(activeClientUid, {
-        text,
-        senderId: user.uid,
-        senderRole: 'admin',
-        senderName: 'Rensé',
-        clientName: c.clientName,
-        clientEmail: c.clientEmail
+        text, senderId: user.uid, senderRole: 'admin', senderName: 'Rensé',
+        clientName: c.clientName, clientEmail: c.clientEmail
       });
       input.value = '';
     } catch (err) {
       console.error(err);
       showToast('Could not send message. Please try again.');
     } finally {
-      input.disabled = false;
+      setChatComposerState(activeClientUid);
     }
   };
 
@@ -1133,85 +1765,462 @@
 </script>
 
 <script>
+  window.listFilter = 'all';
+  window.hasUnreadMessages = false;
+  window.activeClientUid = null;
+  window.profileReturnTab = 'list';
+  window.adminActivePage = 'overview';
+
+  let invoiceTab = 'subscriptions';
+  let autoMessages = [];
+  let editingMsgId = null;
+  let addingNewMsg = false;
+  let copiedMsgId = null;
+  let newMsgDraft = { title: '', trigger: '', body: '' };
+  let editMsgDraft = null;
+
+  const DEFAULT_AUTO_MESSAGES = [
+    { id: 1, title: 'Welcome message', body: "Welcome to Rensé! We're excited to have you on board. Your project is now underway.", trigger: 'On signup' }
+  ];
 
   function initStats() {
-    document.getElementById('ov-clients').textContent  = '0';
-    document.getElementById('ov-invoices').textContent = '0';
-    document.getElementById('ov-accounts').textContent = '0';
-    const ovChats = document.getElementById('ov-chats');
-    ovChats.textContent = '0';
-    ovChats.classList.remove('has-unread');
+    ['ov-clients', 'ov-invoices', 'ov-accounts', 'ov-chats'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
     document.getElementById('topbar-unread').style.display = 'none';
   }
 
-  let hasUnreadMessages = false;
-  window.hasUnreadMessages = false;
-  window.activeClientUid = null;
+  function updateGreeting() {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const el = document.getElementById('greeting-text');
+    if (el) el.textContent = greeting + ', Rensé.';
+  }
+  window.updateGreeting = updateGreeting;
 
-  // ── TABS ──
+  function openList(filter) {
+    window.listFilter = filter || 'all';
+    switchTab('list');
+  }
+  window.openList = openList;
+
   function switchTab(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
+    if (window.adminActivePage === 'profile' && name !== 'profile' && window.closeProfileView) {
+      window.closeProfileView();
+    }
+    document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+    const page = document.getElementById('page-' + name);
+    if (page) page.classList.add('active');
     window.adminActivePage = name;
     window.adminChatVisible = name === 'chat';
-    if (name === 'chat' && window.onAdminChatTabOpen) window.onAdminChatTabOpen();
+    if (name === 'list' && window.renderAdminUserLists) window.renderAdminUserLists(true);
+    else if (name === 'chat') {
+      if (window.renderChatTabs) window.renderChatTabs();
+      if (window.onAdminChatTabOpen) window.onAdminChatTabOpen();
+    } else if (name === 'invoices' && window.renderInvoices) {
+      window.renderInvoices();
+    } else if (name === 'overview') {
+      if (window.updateDashboardCounts) window.updateDashboardCounts();
+      if (window.updateChatUnreadIndicators) window.updateChatUnreadIndicators();
+    }
     const dot = document.getElementById('topbar-unread');
     const showTopbar = window.hasUnreadMessages && name !== 'overview' && name !== 'chat';
     dot.style.display = showTopbar ? 'flex' : 'none';
+    if (name === 'list') document.getElementById('page-list')?.scrollTo(0, 0);
   }
-  function goBack() {
-    switchTab('overview');
+  window.switchTab = switchTab;
+
+  function goBack() { switchTab('overview'); }
+
+  function initAutoMessages() {
+    try {
+      const stored = localStorage.getItem('rense_auto_messages');
+      autoMessages = stored ? JSON.parse(stored) : DEFAULT_AUTO_MESSAGES.slice();
+    } catch (_) {
+      autoMessages = DEFAULT_AUTO_MESSAGES.slice();
+    }
+  }
+  window.initAutoMessages = initAutoMessages;
+
+  function saveAutoMessages() {
+    localStorage.setItem('rense_auto_messages', JSON.stringify(autoMessages));
   }
 
-  // ── TOGGLE ROW ──
-  function toggleRow(card) { card.classList.toggle('open'); }
+  function setInvoiceTab(tab) {
+    invoiceTab = tab;
+    document.querySelectorAll('.invoice-tab').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.invTab === tab);
+    });
+    document.getElementById('inv-subscriptions').classList.toggle('hidden', tab !== 'subscriptions');
+    document.getElementById('inv-automated').classList.toggle('hidden', tab !== 'automated');
+    renderInvoices();
+  }
+  window.setInvoiceTab = setInvoiceTab;
 
-  window.profileReturnTab = 'clients';
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
-  // ── CONFIRM SEND ──
+  function getInitialsLocal(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+
+  function formatJoinedLocal(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  function renderSubscriptionCard(u) {
+    const deleted = window.isDeletedUser ? window.isDeletedUser(u) : (u.deleted === true || !!u.deletedAt);
+    const isActive = u.isClient === true && !deleted;
+    const since = formatJoinedLocal(u.createdAt);
+    const plan = window.getSubscriptionPlanById ? window.getSubscriptionPlanById(u.subscriptionPlan) : null;
+    const amountLabel = isActive && plan ? plan.displayAmount : '—';
+    const nextBilling = isActive ? formatNextBillingLocal(u) : null;
+    const planOptions = (window.SUBSCRIPTION_PLANS || []).map((p) => {
+      const sel = u.subscriptionPlan === p.id ? ' selected' : '';
+      return `<option value="${p.id}"${sel}>${esc(p.label)} — ${esc(p.displayAmount)}/yr</option>`;
+    }).join('');
+    const currentPlan = u.subscriptionPlan || '';
+    const statusLabel = deleted ? 'deleted' : isActive ? 'active' : 'inactive';
+    const statusClass = deleted ? ' deleted' : isActive ? '' : ' inactive';
+
+    return `<div class="sub-card${isActive ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
+      <div class="sub-card-header">
+        <div class="user-avatar" style="width:42px;height:42px;border-radius:13px;">${esc(getInitialsLocal(u.name || 'User'))}</div>
+        <div style="flex:1;min-width:0;">
+          ${window.profileNameLink(u.id, u.name || 'User', 'invoices', 'user-name')}
+          <div class="user-email">${esc(u.email || '—')}</div>
+        </div>
+        <span class="sub-status${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row-label">Plan</span>
+        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${isActive ? '0' : '1'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isActive ? '' : ' disabled'}>
+          <option value=""${!currentPlan ? ' selected' : ''}>No subscription</option>
+          ${planOptions}
+        </select>
+      </div>
+      <div class="sub-row">
+        <span class="sub-row-label">Amount per year</span>
+        <span class="sub-row-value${isActive ? '' : ' muted'}">${esc(amountLabel)}</span>
+      </div>
+      ${isActive ? `<div class="sub-row"><span class="sub-row-label">Next billing</span><span class="sub-row-value">${esc(nextBilling)}</span></div>` : ''}
+      <div class="sub-row">
+        <span class="sub-row-label">Member since</span>
+        <span class="sub-row-value">${esc(since)}</span>
+      </div>
+    </div>`;
+  }
+
+  function formatNextBillingLocal(u) {
+    const raw = u.subscriptionRenewAt || u.renewDate || u.createdAt;
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  function getSubscriptionPlanLabel(planId) {
+    if (!planId) return 'No subscription';
+    const plan = window.getSubscriptionPlanById ? window.getSubscriptionPlanById(planId) : null;
+    return plan ? `${plan.label} (${plan.displayAmount}/yr)` : 'No subscription';
+  }
+
+  let billingPending = null;
+
+  function openBillingConfirm(pending) {
+    billingPending = pending;
+    document.getElementById('billing-confirm-title').textContent = 'Confirm billing change';
+    document.getElementById('billing-confirm-msg').textContent =
+      `Change billing for ${pending.name}?\n\nFrom: ${getSubscriptionPlanLabel(pending.prevPlanId)}\nTo: ${getSubscriptionPlanLabel(pending.planId)}\n\nNothing will change unless you confirm.`;
+    const btn = document.getElementById('btn-billing-confirm');
+    btn.disabled = false;
+    btn.textContent = 'Confirm';
+    document.getElementById('billing-confirm-overlay').classList.add('open');
+  }
+
+  function closeBillingOverlay() {
+    document.getElementById('billing-confirm-overlay').classList.remove('open');
+  }
+
+  function cancelBillingChange() {
+    if (billingPending?.selectEl) {
+      billingPending.selectEl.value = billingPending.prevPlanId;
+    }
+    billingPending = null;
+    closeBillingOverlay();
+  }
+  window.cancelBillingChange = cancelBillingChange;
+
+  async function confirmBillingChange() {
+    const pending = billingPending;
+    if (!pending) {
+      closeBillingOverlay();
+      return;
+    }
+
+    const user = (window.adminAllAccountsList || []).find((u) => u.id === pending.uid);
+    if (window.isDeletedUser && user && window.isDeletedUser(user)) {
+      cancelBillingChange();
+      if (window.showToast) window.showToast('Cannot change billing for a deleted account.');
+      return;
+    }
+    if (user && user.isClient !== true) {
+      cancelBillingChange();
+      if (window.showToast) window.showToast('Enable client status before changing billing.');
+      return;
+    }
+
+    const { uid, planId, prevPlanId, selectEl } = pending;
+    const btn = document.getElementById('btn-billing-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      if (window.updateUserSubscription) await window.updateUserSubscription(uid, planId);
+      selectEl.value = planId;
+      selectEl.dataset.currentPlan = planId;
+      if (window.showToast) window.showToast(planId ? 'Subscription updated ✓' : 'Subscription removed');
+      billingPending = null;
+      closeBillingOverlay();
+      if (window.renderInvoices) window.renderInvoices();
+    } catch (err) {
+      console.error(err);
+      selectEl.value = prevPlanId;
+      if (window.showToast) window.showToast('Could not update subscription.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirm';
+    }
+  }
+  window.confirmBillingChange = confirmBillingChange;
+
+  function bindSubscriptionSelects(root) {
+    root.querySelectorAll('.sub-plan-select').forEach((sel) => {
+      if (sel.dataset.bound) return;
+      sel.dataset.bound = '1';
+      sel.addEventListener('change', () => {
+        if (sel.dataset.deleted === '1' || sel.dataset.inactive === '1' || sel.disabled) {
+          sel.value = sel.dataset.currentPlan ?? '';
+          return;
+        }
+        const uid = sel.dataset.subUser;
+        const prevPlanId = sel.dataset.currentPlan ?? '';
+        const planId = sel.value;
+
+        sel.value = prevPlanId;
+        if (planId === prevPlanId) return;
+
+        const user = (window.adminAllAccountsList || window.adminUsersList || []).find((u) => u.id === uid);
+        const name = user?.name || user?.email || 'this user';
+        if (window.isDeletedUser && user && window.isDeletedUser(user)) {
+          sel.value = sel.dataset.currentPlan ?? '';
+          if (window.showToast) window.showToast('Cannot change billing for a deleted account.');
+          return;
+        }
+        if (user && user.isClient !== true) {
+          sel.value = sel.dataset.currentPlan ?? '';
+          if (window.showToast) window.showToast('Enable client status before changing billing.');
+          return;
+        }
+        openBillingConfirm({ uid, planId, prevPlanId, selectEl: sel, name });
+      });
+    });
+  }
+
+  function renderInvoices() {
+    const users = (window.adminAllAccountsList || window.adminUsersList || [])
+      .slice()
+      .sort((a, b) => {
+        const aActive = a.isClient === true ? 0 : 1;
+        const bActive = b.isClient === true ? 0 : 1;
+        if (aActive !== bActive) return aActive - bActive;
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
+    const clients = users.filter((u) => u.isClient === true && u.deleted !== true);
+
+    const ovInv = document.getElementById('ov-invoices');
+    if (ovInv) {
+      ovInv.textContent = String(clients.length);
+      document.getElementById('tile-invoices')?.classList.toggle('active', clients.length > 0 || true);
+    }
+
+    const subPanel = document.getElementById('inv-subscriptions');
+    const autoPanel = document.getElementById('inv-automated');
+    if (!subPanel || !autoPanel) return;
+
+    subPanel.innerHTML = `
+      <a class="stripe-link" href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">
+        <div class="stripe-link-inner">
+          <div class="stripe-icon">⚡</div>
+          <div>
+            <div class="stripe-title">Stripe Dashboard</div>
+            <div class="stripe-sub">Manage payments &amp; subscriptions</div>
+          </div>
+        </div>
+        <span class="stripe-arrow">→</span>
+      </a>
+      <p class="sub-label">Yearly Subscriptions · ${clients.length} active</p>
+      ${users.length === 0 ? '<p class="empty-state">No accounts yet.</p>' : users.map((u) => renderSubscriptionCard(u)).join('')}`;
+
+    bindSubscriptionSelects(subPanel);
+
+    autoPanel.innerHTML = `
+      <div class="auto-header">
+        <p class="sub-label" style="margin:0;">Pre-written · Sent automatically</p>
+        <button type="button" class="btn-add-msg" onclick="startAddAutoMsg()">+ Add</button>
+      </div>
+      ${addingNewMsg ? renderAutoForm('new') : ''}
+      ${autoMessages.map((msg) => editingMsgId === msg.id ? renderAutoForm('edit', msg) : renderAutoCard(msg)).join('')}`;
+
+    bindAutoFormEvents();
+    if (window.bindProfileLinks) window.bindProfileLinks(subPanel);
+  }
+  window.renderInvoices = renderInvoices;
+
+  function renderAutoCard(msg) {
+    const copied = copiedMsgId === msg.id;
+    return `<div class="auto-card">
+      <div class="auto-card-top">
+        <div style="flex:1;min-width:0;margin-right:10px;">
+          <div class="auto-card-title">${esc(msg.title)}</div>
+          <div class="auto-card-trigger">${esc(msg.trigger)}</div>
+        </div>
+        <div class="auto-card-actions">
+          <button type="button" class="btn-auto" onclick="startEditAutoMsg(${msg.id})">Edit</button>
+          <button type="button" class="btn-auto${copied ? ' copied' : ''}" onclick="copyAutoMsg(${msg.id})">${copied ? '✓ Copied' : 'Copy'}</button>
+        </div>
+      </div>
+      <p class="auto-card-body">${esc(msg.body)}</p>
+    </div>`;
+  }
+
+  function renderAutoForm(mode, msg) {
+    const d = mode === 'edit' ? editMsgDraft : newMsgDraft;
+    const id = mode === 'edit' ? msg.id : 'new';
+    return `<div class="auto-form" data-form="${id}">
+      <input type="text" data-field="title" value="${esc(d.title)}" placeholder="Message title"/>
+      <input type="text" class="trigger" data-field="trigger" value="${esc(d.trigger)}" placeholder="Trigger (e.g. On signup)"/>
+      <textarea data-field="body" rows="3" placeholder="Write the message body…">${esc(d.body)}</textarea>
+      <div class="auto-form-btns">
+        <button type="button" class="save" onclick="saveAutoMsg('${id}')">Save</button>
+        <button type="button" class="cancel" onclick="cancelAutoForm()">Cancel</button>
+      </div>
+    </div>`;
+  }
+
+  function bindAutoFormEvents() {
+    document.querySelectorAll('.auto-form').forEach((form) => {
+      const id = form.dataset.form;
+      const target = id === 'new' ? newMsgDraft : editMsgDraft;
+      if (!target) return;
+      form.querySelectorAll('[data-field]').forEach((el) => {
+        el.addEventListener('input', () => { target[el.dataset.field] = el.value; });
+      });
+    });
+  }
+
+  function startAddAutoMsg() {
+    addingNewMsg = true;
+    editingMsgId = null;
+    newMsgDraft = { title: '', trigger: '', body: '' };
+    renderInvoices();
+  }
+  window.startAddAutoMsg = startAddAutoMsg;
+
+  function startEditAutoMsg(id) {
+    const msg = autoMessages.find((m) => m.id === id);
+    if (!msg) return;
+    editingMsgId = id;
+    addingNewMsg = false;
+    editMsgDraft = { ...msg };
+    renderInvoices();
+  }
+  window.startEditAutoMsg = startEditAutoMsg;
+
+  function saveAutoMsg(id) {
+    if (id === 'new') {
+      if (!newMsgDraft.title.trim()) return;
+      autoMessages.push({ ...newMsgDraft, id: Date.now() });
+      addingNewMsg = false;
+      newMsgDraft = { title: '', trigger: '', body: '' };
+    } else {
+      if (!editMsgDraft?.title?.trim()) return;
+      autoMessages = autoMessages.map((m) => m.id === Number(id) ? { ...editMsgDraft } : m);
+      editingMsgId = null;
+      editMsgDraft = null;
+    }
+    saveAutoMessages();
+    renderInvoices();
+  }
+  window.saveAutoMsg = saveAutoMsg;
+
+  function cancelAutoForm() {
+    addingNewMsg = false;
+    editingMsgId = null;
+    editMsgDraft = null;
+    newMsgDraft = { title: '', trigger: '', body: '' };
+    renderInvoices();
+  }
+  window.cancelAutoForm = cancelAutoForm;
+
+  function copyAutoMsg(id) {
+    const msg = autoMessages.find((m) => m.id === id);
+    if (!msg) return;
+    navigator.clipboard?.writeText(msg.body).catch(() => {});
+    copiedMsgId = id;
+    renderInvoices();
+    setTimeout(() => { copiedMsgId = null; renderInvoices(); }, 2000);
+  }
+  window.copyAutoMsg = copyAutoMsg;
+
   let pendingEmail = '';
   function confirmSend(email, name) {
     pendingEmail = email;
     document.getElementById('confirm-msg').textContent = `Are you sure you want to send a payment request to ${name} at ${email}?`;
     document.getElementById('confirm-overlay').classList.add('open');
   }
+  window.confirmSend = confirmSend;
+
   function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
+  window.closeConfirm = closeConfirm;
+
   document.getElementById('btn-confirm-send').addEventListener('click', () => {
     closeConfirm();
-    showToast(`✓ Payment request sent to ${pendingEmail}`);
+    showToast('✓ Payment request sent to ' + pendingEmail);
   });
-  document.getElementById('confirm-overlay').addEventListener('click', e => {
+  document.getElementById('confirm-overlay').addEventListener('click', (e) => {
     if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
   });
 
-  // ── CHAT ──
-  // goToChat and sendMessage are defined in the module script
-
   function sendUpdate() {
+    const data = usersMap.get(window.activeProfileUid) || {};
+    if (isDeletedUser(data) || data.isClient !== true) return;
     const msg = document.getElementById('update-msg').value.trim();
     const conf = document.getElementById('update-confirm');
     if (!msg) return;
     conf.textContent = 'Update sent to ' + document.getElementById('prof-name').textContent + ' ✓';
     document.getElementById('update-msg').value = '';
     showToast('Update published ✓');
-    setTimeout(() => conf.textContent = '', 4000);
+    setTimeout(() => { conf.textContent = ''; }, 4000);
   }
+  window.sendUpdate = sendUpdate;
 
-  // ── TOAST ──
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    t.textContent = msg;
+    t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3500);
   }
   window.showToast = showToast;
-
-  // Filter buttons (visual only)
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      this.closest('.filter-row').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-    });
-  });
 </script>
+<script src="js/pwa.js"></script>
 </body>
 </html>

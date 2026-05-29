@@ -12,7 +12,7 @@ export async function ensureUserProfile(uid, { name, email, phone } = {}) {
   if (phone != null) payload.phone = phone;
   if (!snap.exists()) {
     payload.createdAt = new Date().toISOString();
-  } else if (snap.data().deleted === true) {
+  } else if (snap.data().deleted === true || snap.data().deletedAt) {
     payload.deleted = deleteField();
     payload.deletedAt = deleteField();
   }
@@ -45,16 +45,29 @@ export async function deleteConversationData(uid) {
   await commitBatch();
 }
 
-export async function deleteUserData(uid) {
-  try {
-    await updateDoc(doc(db, 'conversations', uid), { accountDeleted: true });
-  } catch (_) {
-    // conversation may not exist
+export async function deleteUserData(uid, { keepRecord = true } = {}) {
+  if (keepRecord) {
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        deleted: true,
+        deletedAt: new Date().toISOString(),
+        isClient: false,
+        websiteActive: false,
+        subscriptionPlan: deleteField(),
+        subscriptionAmount: deleteField(),
+        subscriptionCurrency: deleteField(),
+        subscriptionRenewAt: deleteField(),
+      });
+    } catch (err) {
+      console.warn('Could not mark user as deleted:', err);
+    }
   }
   await deleteConversationData(uid);
-  try {
-    await deleteDoc(doc(db, 'users', uid));
-  } catch (err) {
-    console.warn('Could not delete user profile:', err);
+  if (!keepRecord) {
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch (err) {
+      console.warn('Could not delete user profile:', err);
+    }
   }
 }

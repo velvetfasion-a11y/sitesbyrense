@@ -3,359 +3,509 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png"/>
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#080808"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="Rensé"/>
+<meta name="application-name" content="Rensé"/>
 <title>My Account — Rensé</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --black:#000; --white:#fff; --green:#2ecc71; --gold:#C9B97A; --gray:#888; --dim:#222; --mid:#333; }
-  body { font-family: 'Georgia', Georgia, serif; background: var(--black); color: var(--white); min-height: 100vh; }
-
-  #app { display: none; }
-
-  .topbar { position: sticky; top: 0; z-index: 200; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: #080808; border-bottom: 1px solid var(--dim); }
-  .topbar-brand { font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gray); text-decoration: none; }
-  .topbar-name { font-size: 0.72rem; letter-spacing: 0.18em; color: var(--white); }
-  .settings-page-wrap { min-height: calc(100vh - 8rem); display: flex; flex-direction: column; }
-  .sub-page-wrap { min-height: calc(100vh - 8rem); display: flex; flex-direction: column; }
-  .settings-footer { margin-top: auto; padding-top: 2.5rem; }
-  .btn-delete-account {
-    background: none; border: none; padding: 0;
-    font-family: 'Georgia', Georgia, serif;
-    font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
-    color: #666; cursor: pointer; transition: color 0.2s;
+  :root {
+    --bg: #080808;
+    --white: #fff;
+    --green: #22c55e;
+    --gold: #c9a84c;
+    --gold-dark: #a07830;
+    --gold-border: rgba(201,168,76,0.2);
+    --font-ui: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
   }
-  .btn-delete-account:hover { color: #e74c3c; }
-  .btn-signout {
-    background: none; border: none; padding: 0;
-    font-family: 'Georgia', Georgia, serif;
-    font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
-    color: #666; cursor: pointer; transition: color 0.2s, opacity 0.2s;
-    opacity: 0.55;
+  body { font-family: var(--font-ui); background: var(--bg); color: var(--white); min-height: 100vh; }
+  #app { display: none; max-width: 430px; margin: 0 auto; min-height: 100vh; }
+
+  .nav { padding: 24px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+  .nav-brand { font-family: var(--font-serif); font-size: 16px; letter-spacing: 0.28em; color: var(--gold); text-decoration: none; }
+  .nav-user { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .nav-hairline { margin: 14px 24px 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-border), transparent); }
+  .back-btn {
+    background: none; border: none; color: rgba(255,255,255,0.3); font-size: 13px;
+    cursor: pointer; padding: 16px 24px 0; display: flex; align-items: center; gap: 5px;
+    font-family: var(--font-ui);
   }
-  .btn-signout:hover { color: #e74c3c; opacity: 1; }
 
-  .delete-warning { font-size: 0.82rem; color: var(--gray); font-style: italic; line-height: 1.65; margin-bottom: 1.5rem; }
-  .btn-danger:disabled { opacity: 0.35; cursor: not-allowed; }
-  .btn-danger:disabled:hover { background: transparent; color: #e74c3c; }
-  .delete-msg { font-size: 0.78rem; margin-top: 0.8rem; font-style: italic; min-height: 1rem; }
-
-  .back-btn { display: none; align-items: center; gap: 0.5rem; background: transparent; border: none; color: var(--gray); font-family: 'Georgia', Georgia, serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; padding: 0; margin-bottom: 1.8rem; transition: color 0.2s; }
-  .back-btn:hover { color: var(--white); }
-  .back-btn.show { display: flex; }
-
-  .content { padding: 2rem 1.5rem 3rem; max-width: 600px; margin: 0 auto; }
-  .page { display: none; }
+  .page { display: none; padding-bottom: 60px; }
   .page.active { display: block; }
+  .page-chat.active { display: flex; flex-direction: column; height: 100vh; padding-bottom: 0; overflow: hidden; }
 
-  .overview-greeting { margin-bottom: 2rem; }
-  .greeting-label { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.4rem; }
-  .greeting-name { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 400; letter-spacing: 0.04em; }
+  .page-head { padding: 28px 24px 0; }
+  .page-head.tight { padding-top: 16px; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.2); margin: 0 0 8px; text-transform: uppercase; }
+  .headline { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.5px; font-family: var(--font-serif); line-height: 1.15; }
+  .headline.sm { font-size: 28px; }
+  .subtext { font-size: 14px; color: rgba(255,255,255,0.35); margin: 12px 0 0; line-height: 1.65; }
 
-  .cards-top { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-  .cards-bottom { display: flex; justify-content: center; }
-  .cards-bottom .dash-card { width: calc(50% - 0.5rem); }
-
-  .dash-card {
-    border: 1px solid var(--dim); border-radius: 12px;
-    padding: 1.2rem; min-height: 130px;
-    display: flex; flex-direction: column; cursor: pointer;
-    transition: border-color 0.25s, transform 0.2s; position: relative;
+  /* Dashboard grid */
+  .dash-grid { padding: 24px 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dash-tile {
+    background: transparent; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px; padding: 22px 20px 20px; text-align: left;
+    cursor: pointer; font-family: var(--font-ui); display: flex; flex-direction: column;
+    color: inherit;
   }
-  .dash-card:hover { border-color: var(--gold); transform: translateY(-2px); }
-  .card-label { font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gray); }
-  .card-icon { font-size: 2rem; flex: 1; display: flex; align-items: center; justify-content: center; }
-  .card-num { font-size: 1.5rem; font-weight: 400; color: var(--gold); text-align: right; }
-  .card-unread { background: var(--white); color: var(--black); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: bold; margin-left: auto; }
-  .card-status { font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; text-align: right; }
-  .card-status.active { color: var(--green); }
-  .card-status.inactive { color: #e74c3c; }
+  .dash-tile.gold-border { border-color: var(--gold-border); }
+  .dash-tile.full { grid-column: 1 / -1; padding: 18px 20px; flex-direction: row; align-items: center; justify-content: space-between; }
+  .dash-tile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; width: 100%; }
+  .dash-tile-label { font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.25); text-transform: uppercase; }
+  .dash-tile-icon { font-size: 18px; }
+  .dash-tile-num { font-size: 36px; font-weight: 700; font-family: var(--font-serif); line-height: 1; margin-bottom: 12px; color: rgba(255,255,255,0.12); }
+  .dash-tile-num.has-unread { color: var(--gold); }
+  .dash-tile-hint { font-size: 11px; color: rgba(255,255,255,0.25); letter-spacing: 0.04em; }
+  .dash-status {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    border-radius: 5px; padding: 3px 8px; align-self: flex-start; margin-bottom: 12px;
+    color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .dash-status.live { color: var(--green); border-color: var(--green); }
+  .dash-tile-settings-left { display: flex; align-items: center; gap: 14px; }
+  .dash-settings-icon {
+    width: 38px; height: 38px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .dash-settings-sub { font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+  .dash-chevron { font-size: 20px; color: rgba(255,255,255,0.18); }
 
-  .chat-page { display: flex; flex-direction: column; height: calc(100vh - 8rem); }
-  .chat-rense-header { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 0 1rem; border-bottom: 1px solid var(--dim); margin-bottom: 0; }
-  .rense-avatar { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--mid); display: flex; align-items: center; justify-content: center; font-size: 0.82rem; letter-spacing: 0.08em; color: var(--white); margin-bottom: 0.5rem; }
-  .rense-name { font-size: 0.82rem; letter-spacing: 0.12em; color: var(--white); margin-bottom: 0.2rem; }
-  .rense-status { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
+  /* Progress card */
+  .progress-card { padding: 20px 24px 0; }
+  .progress-box { border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 18px 20px; }
+  .progress-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .progress-pct { font-size: 12px; color: rgba(255,255,255,0.3); }
+  .progress-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 99px; margin-bottom: 14px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, var(--green)); border-radius: 99px; transition: width 0.4s; }
+  .progress-step { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .progress-step-icon {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: transparent;
+  }
+  .progress-step-icon.done { background: var(--green); border-color: var(--green); color: #fff; }
+  .progress-step-label { font-size: 14px; color: rgba(255,255,255,0.3); }
+  .progress-step-label.done { color: #fff; font-weight: 500; }
+
+  /* Chat */
+  .chat-header { padding: 16px 24px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .chat-avatar {
+    width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 14px; letter-spacing: 0.1em; color: #fff;
+  }
+  .chat-divider { margin: 14px 24px 0; height: 1px; background: rgba(255,255,255,0.05); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
   .msg-wrap { display: flex; flex-direction: column; }
   .msg-wrap.me { align-items: flex-end; }
-  .msg-bubble { max-width: 75%; padding: 0.7rem 1rem; font-size: 0.85rem; line-height: 1.6; }
-  .msg-bubble.them { background: #111; border: 1px solid var(--dim); align-self: flex-start; }
-  .msg-bubble.me { background: transparent; border: 1px solid #444; align-self: flex-end; }
-  .msg-time { font-size: 0.58rem; color: var(--gray); margin-top: 0.3rem; }
-  .msg-sender { font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.3rem; }
-  .chat-input-row { display: flex; border-top: 1px solid var(--dim); }
-  .chat-input { flex: 1; background: transparent; border: none; padding: 1rem 1.2rem; font-family: 'Georgia', Georgia, serif; font-size: 0.85rem; color: var(--white); outline: none; }
-  .chat-input::placeholder { color: #444; }
-  .btn-send { background: transparent; border-left: 1px solid var(--dim); color: var(--gray); padding: 1rem 1.2rem; cursor: pointer; font-size: 1rem; transition: color 0.2s; }
-  .btn-send:hover { color: var(--gold); }
+  .msg-bubble { max-width: 75%; padding: 10px 14px; font-size: 15px; line-height: 1.45; }
+  .msg-bubble.them { border: 1px solid var(--gold-border); border-radius: 16px 16px 16px 4px; align-self: flex-start; }
+  .msg-bubble.me { border: 1px solid rgba(255,255,255,0.12); border-radius: 16px 16px 4px 16px; color: rgba(255,255,255,0.85); align-self: flex-end; }
+  .msg-sender { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 5px; }
+  .msg-bubble.them .msg-sender { color: var(--gold); }
+  .msg-bubble.me .msg-sender { color: rgba(255,255,255,0.25); }
+  .msg-time { font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 4px; }
+  .chat-input-bar { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.07); padding: 12px 16px 24px; display: flex; gap: 10px; align-items: center; }
+  .chat-input {
+    flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 11px 16px; font-size: 14px; color: #fff;
+    outline: none; font-family: var(--font-ui); caret-color: var(--gold);
+  }
+  .chat-input::placeholder { color: rgba(255,255,255,0.2); }
+  .btn-send {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: transparent; border: 1px solid var(--gold-border);
+    color: var(--gold); font-size: 18px; cursor: pointer;
+  }
 
-  .ws-hero { border: 1px solid var(--dim); border-radius: 10px; padding: 1.4rem; margin-bottom: 1.5rem; }
-  .ws-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .ws-url { font-size: 1rem; color: var(--gold); text-decoration: none; letter-spacing: 0.04em; }
-  .ws-url:hover { text-decoration: underline; }
-  .ws-badge { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; padding: 0.3rem 0.8rem; border: 1px solid; border-radius: 2px; }
-  .ws-badge.active { color: var(--green); border-color: var(--green); }
-  .ws-badge.inactive { color: #e74c3c; border-color: #e74c3c; }
-  .ws-steps { margin-top: 1.2rem; display: flex; flex-direction: column; gap: 0.6rem; }
-  .ws-step { display: flex; align-items: center; gap: 0.8rem; font-size: 0.8rem; }
-  .ws-step-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; flex-shrink: 0; }
-  .ws-step-icon.done   { background: var(--green); color: var(--black); }
-  .ws-step-icon.active { background: var(--gold);  color: var(--black); }
-  .ws-step-icon.todo   { background: var(--dim);   color: var(--gray); }
-  .ws-step-text.done   { color: var(--green); }
-  .ws-step-text.active { color: var(--white); }
-  .ws-step-text.todo   { color: #555; }
-
-  .updates-section { margin-top: 1.5rem; }
-  .updates-label { font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--dim); }
-  .update-item { border-left: 2px solid var(--gold); padding: 0.7rem 0 0.7rem 1rem; margin-bottom: 0.8rem; }
-  .update-date { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.3rem; }
-  .update-text { font-size: 0.85rem; color: var(--white); line-height: 1.6; font-style: italic; }
-
-  .settings-list { display: flex; flex-direction: column; gap: 1px; }
-  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 0.2rem; border-bottom: 1px solid var(--dim); cursor: pointer; transition: opacity 0.2s; }
-  .settings-row:hover { opacity: 0.7; }
+  /* Settings list */
+  .settings-box { padding: 24px 24px 0; }
+  .settings-card { border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; overflow: hidden; }
+  .settings-row {
+    width: 100%; background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 14px 18px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; font-family: var(--font-ui); text-align: left; color: inherit;
+  }
   .settings-row:last-child { border-bottom: none; }
-  .settings-row-left { display: flex; align-items: center; gap: 0.8rem; }
-  .settings-icon { font-size: 1.1rem; width: 28px; text-align: center; }
-  .settings-text { font-size: 0.85rem; }
-  .settings-arrow { color: var(--gray); font-size: 0.7rem; }
+  .settings-row-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .settings-row-label { font-size: 16px; color: #fff; }
+  .settings-row-sub { font-size: 11px; margin-top: 2px; color: rgba(255,255,255,0.3); }
+  .settings-row-sub.active { color: var(--green); }
+  .settings-chevron { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.18); }
+  .settings-footer { padding: 28px 24px 0; }
+  .btn-signout { background: transparent; border: none; color: rgba(255,255,255,0.15); font-size: 12px; letter-spacing: 0.06em; cursor: pointer; font-family: var(--font-ui); padding: 0; }
 
-  .sub-page { display: none; }
+  /* Sub pages */
+  .sub-page { display: none; padding-bottom: 60px; }
   .sub-page.active { display: block; }
-  .settings-title { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.5rem; }
-  .settings-headline { font-size: 1.5rem; font-weight: 400; margin-bottom: 2rem; }
+  .field { padding: 0 24px; margin-bottom: 12px; }
+  .field label { font-size: 10px; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); text-transform: uppercase; display: block; margin-bottom: 7px; }
+  .field input, .field textarea {
+    width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 13px 16px; font-size: 15px; color: #fff;
+    outline: none; font-family: var(--font-ui); box-sizing: border-box; caret-color: var(--gold);
+  }
+  .field input:read-only { color: rgba(255,255,255,0.35); }
+  .btn-primary {
+    display: block; width: calc(100% - 48px); margin: 16px 24px 0; padding: 16px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border: none; border-radius: 14px; color: #000; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: var(--font-ui); text-align: center; text-decoration: none;
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-outline {
+    display: block; width: calc(100% - 48px); margin: 12px 24px 0; padding: 14px;
+    background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+    color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .btn-danger-outline {
+    display: block; width: calc(100% - 48px); margin: 12px 24px 0; padding: 14px;
+    background: transparent; border: 1px solid rgba(255,60,60,0.2); border-radius: 14px;
+    color: rgba(255,80,80,0.55); font-size: 14px; cursor: pointer; font-family: var(--font-ui);
+  }
+  .btn-text-danger { background: transparent; border: none; color: rgba(255,255,255,0.15); font-size: 12px; cursor: pointer; font-family: var(--font-ui); padding: 0; }
+  .billing-cancel-wrap { padding: 20px 24px 0; }
+  .billing-cancel-wrap .eyebrow { margin-bottom: 6px; }
+  .billing-cancel-wrap .cancel-box { margin: 10px 0 0; }
+  .btn-cancel-sub {
+    display: inline-block; width: auto; margin: 0; padding: 4px 8px;
+    background: transparent; border: 1px solid rgba(255,60,60,0.2); border-radius: 6px;
+    color: rgba(255,80,80,0.45); font-size: 10px; letter-spacing: 0.04em;
+    cursor: pointer; font-family: var(--font-ui); line-height: 1.3;
+  }
+  .btn-cancel-sub:hover { border-color: rgba(255,60,60,0.35); color: rgba(255,80,80,0.65); }
 
-  .field { margin-bottom: 1.2rem; }
-  .field label { display: block; font-size: 0.65rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.45rem; }
-  .field input, .field textarea { width: 100%; background: transparent; border: 1px solid var(--dim); padding: 0.75rem 1rem; font-family: 'Georgia', Georgia, serif; font-size: 0.88rem; color: var(--white); outline: none; transition: border-color 0.2s; resize: vertical; }
-  .field input:focus, .field textarea:focus { border-color: #555; }
-  .field input::placeholder { color: #444; }
-  .field input:read-only { color: var(--gray); cursor: default; }
+  /* Subscription */
+  .price-block { padding: 24px 24px 0; border-bottom: 1px solid rgba(255,255,255,0.07); margin: 0 24px; padding-left: 0; padding-right: 0; }
+  .price-label { font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.2); text-transform: uppercase; margin-bottom: 10px; }
+  .price-row { display: flex; align-items: baseline; gap: 8px; }
+  .price-amount { font-size: 46px; font-weight: 700; font-family: var(--font-serif); color: var(--gold); letter-spacing: -1.5px; line-height: 1; }
+  .price-period { font-size: 13px; color: rgba(255,255,255,0.25); }
+  .price-note { font-size: 12px; color: rgba(255,255,255,0.18); margin-top: 6px; }
+  .covers-list { padding: 24px 24px 0; display: flex; flex-direction: column; gap: 16px; }
+  .covers-item-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .covers-item-desc { font-size: 13px; color: rgba(255,255,255,0.3); line-height: 1.5; }
+  .stripe-note { font-size: 11px; color: rgba(255,255,255,0.15); text-align: center; margin: 12px 24px 0; line-height: 1.5; }
 
-  .btn-outline { width: 100%; padding: 0.85rem; background: transparent; color: var(--white); border: 1px solid var(--white); font-family: 'Georgia', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; margin-top: 0.4rem; }
-  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-  .btn-danger { width: 100%; padding: 0.85rem; background: transparent; color: #e74c3c; border: 1px solid #e74c3c; font-family: 'Georgia', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; margin-top: 0.6rem; }
-  .btn-danger:hover { background: #e74c3c; color: var(--black); }
+  .billing-card { margin: 24px 24px 0; border: 1px solid var(--gold-border); border-radius: 18px; overflow: hidden; }
+  .billing-card.inactive { border-color: rgba(255,255,255,0.07); }
+  .billing-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .billing-row:last-child { border-bottom: none; }
+  .billing-label { font-size: 14px; color: rgba(255,255,255,0.35); }
+  .billing-value { font-size: 14px; font-weight: 500; }
+  .billing-value.gold { color: var(--gold); }
+  .status-pill {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    border-radius: 4px; padding: 3px 8px;
+  }
+  .status-pill.active { color: var(--green); border: 1px solid var(--green); }
+  .status-pill.cancelled { color: rgba(255,80,80,0.7); border: 1px solid rgba(255,80,80,0.3); }
 
-  .sub-card { border: 1px solid var(--dim); border-radius: 10px; padding: 1.4rem; margin-bottom: 1.2rem; }
-  .sub-plan { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.5rem; }
-  .sub-price { font-size: 2rem; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
-  .sub-desc { font-size: 0.8rem; color: var(--gray); font-style: italic; line-height: 1.5; }
-  .sub-renew { font-size: 0.72rem; color: var(--gray); margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--dim); }
+  .checkout-summary { margin: 20px 24px 0; border: 1px solid var(--gold-border); border-radius: 14px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .checkout-plan { font-size: 14px; font-weight: 600; }
+  .checkout-renew { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .checkout-price { font-size: 18px; font-weight: 700; color: var(--gold); font-family: var(--font-serif); }
 
-  .contact-block { border: 1px solid var(--dim); border-radius: 10px; padding: 1.2rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: border-color 0.2s; text-decoration: none; color: var(--white); }
-  .contact-block:hover { border-color: var(--gold); }
-  .contact-block-icon { font-size: 1.4rem; flex-shrink: 0; }
-  .contact-block-label { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gray); margin-bottom: 0.25rem; }
-  .contact-block-val { font-size: 0.85rem; }
+  .success-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px; text-align: center; }
+  .success-icon { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--gold-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; font-size: 22px; }
 
-  .tos-text { font-size: 0.82rem; color: var(--gray); line-height: 1.8; font-style: italic; }
+  .faq-item { border-left: 2px solid var(--gold-border); padding-left: 16px; padding-bottom: 28px; }
+  .faq-q { font-size: 10px; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 8px; }
+  .faq-a { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.6; font-style: italic; }
 
-  .toast { position: fixed; bottom: 2rem; right: 1.5rem; background: #111; border: 1px solid var(--dim); padding: 0.8rem 1.3rem; font-size: 0.78rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; }
+  .cancel-box { margin: 16px 24px 0; border: 1px solid rgba(255,60,60,0.2); border-radius: 18px; padding: 20px; }
+  .cancel-box h3 { margin: 0 0 8px; font-size: 17px; font-family: var(--font-serif); }
+  .cancel-box p { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0 0 5px; line-height: 1.5; }
+  .cancel-btns { display: flex; gap: 10px; margin-top: 18px; }
+  .cancel-btns button { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 14px; cursor: pointer; font-family: var(--font-ui); background: transparent; }
+  .cancel-yes { border: 1px solid rgba(255,60,60,0.3); color: rgba(255,80,80,0.7); }
+  .cancel-no { border: 1px solid var(--gold-border); color: var(--gold); }
+
+  .delete-notice { margin: 0 24px 16px; padding: 12px 16px; border: 1px solid rgba(248,113,113,0.35); border-radius: 12px; background: rgba(248,113,113,0.08); color: rgba(248,113,113,0.9); font-size: 13px; line-height: 1.5; }
+  .form-msg { font-size: 13px; margin: 8px 24px 0; min-height: 1rem; font-style: italic; color: rgba(255,255,255,0.4); }
+
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #111; border: 1px solid rgba(255,255,255,0.08); padding: 0.8rem 1.3rem; font-size: 0.78rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; border-radius: 10px; max-width: 90%; }
   .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div id="app">
-  <div class="topbar">
-    <a href="index.html" class="topbar-brand">Rensé</a>
-    <span class="topbar-name" id="topbar-name"></span>
-  </div>
 
-  <div class="content">
-
-    <div class="page active" id="page-overview">
-      <div class="overview-greeting">
-        <p class="greeting-label">My Account</p>
-        <h2 class="greeting-name" id="greeting-name">Welcome.</h2>
-      </div>
-      <div class="cards-top">
-        <div class="dash-card" onclick="showPage('chat')">
-          <div class="card-label">Chat</div>
-          <div class="card-icon">💬</div>
-          <div class="card-unread" id="chat-badge" style="display:none;">0</div>
-        </div>
-        <div class="dash-card" onclick="showPage('website')">
-          <div class="card-label">Website</div>
-          <div class="card-icon">🌐</div>
-          <div class="card-status inactive" id="ws-card-status">—</div>
-        </div>
-      </div>
-      <div class="cards-bottom">
-        <div class="dash-card" onclick="showPage('settings')">
-          <div class="card-label">Settings</div>
-          <div class="card-icon">⚙️</div>
-          <div class="card-num">›</div>
-        </div>
-      </div>
+  <!-- Dashboard -->
+  <div class="page active" id="page-overview">
+    <div class="nav">
+      <a href="index.html" class="nav-brand">RENSÉ</a>
+      <span class="nav-user" id="topbar-name"></span>
     </div>
-
-    <div class="page" id="page-chat">
-      <button class="back-btn show" onclick="showPage('overview')">← Back</button>
-      <div class="chat-page">
-        <div class="chat-rense-header">
-          <div class="rense-avatar">Rensé</div>
-          <div class="rense-name">Rensé</div>
-          <div class="rense-status">● Online</div>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-          <div class="chat-empty" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--gray);font-style:italic;font-size:0.85rem;padding:2rem;">No messages yet. Send a message to get started.</div>
-        </div>
-        <div class="chat-input-row">
-          <input class="chat-input" id="chat-input" placeholder="Write a message…"/>
-          <button class="btn-send" id="btn-send-chat">➤</button>
-        </div>
-      </div>
+    <div class="nav-hairline"></div>
+    <div class="page-head">
+      <p class="eyebrow">My Account</p>
+      <h1 class="headline" id="greeting-name">Welcome.</h1>
     </div>
-
-    <div class="page" id="page-website">
-      <button class="back-btn show" onclick="showPage('overview')">← Back</button>
-      <p class="settings-title">🌐 Website</p>
-      <h2 class="settings-headline">Your Website</h2>
-
-      <div class="ws-hero">
-        <div class="ws-row">
-          <span class="ws-url" id="ws-url" style="color:var(--gray);font-style:italic;">Not set up yet</span>
-          <span class="ws-badge inactive" id="ws-badge">—</span>
-        </div>
-        <div class="ws-steps" id="ws-steps"></div>
-      </div>
-
-      <div class="updates-section">
-        <p class="updates-label">Updates from Rensé</p>
-        <div id="updates-feed">
-          <p style="color:var(--gray);font-style:italic;font-size:0.85rem;padding:1rem 0;">No updates yet.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-settings">
-      <button class="back-btn show" id="settings-back-btn" onclick="settingsBack()">← Back</button>
-      <div class="settings-page-wrap">
-        <div class="settings-main">
-          <p class="settings-title">Settings</p>
-          <h2 class="settings-headline">My Account</h2>
-
-          <div class="settings-list">
-            <div class="settings-row" onclick="showSub('profile')">
-              <div class="settings-row-left"><span class="settings-icon">👤</span><span class="settings-text">Profile</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-            <div class="settings-row" onclick="showSub('subscription')">
-              <div class="settings-row-left"><span class="settings-icon">💳</span><span class="settings-text">Subscription</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-            <div class="settings-row" onclick="showSub('password')">
-              <div class="settings-row-left"><span class="settings-icon">🔒</span><span class="settings-text">Change Password</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-            <div class="settings-row" onclick="showSub('contact')">
-              <div class="settings-row-left"><span class="settings-icon">📞</span><span class="settings-text">Contact &amp; Support</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-            <div class="settings-row" onclick="showSub('help')">
-              <div class="settings-row-left"><span class="settings-icon">❓</span><span class="settings-text">Help</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-            <div class="settings-row" onclick="showSub('tos')">
-              <div class="settings-row-left"><span class="settings-icon">📄</span><span class="settings-text">Terms of Service</span></div>
-              <span class="settings-arrow">›</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-footer">
-          <button type="button" class="btn-signout" id="btn-signout">Sign out</button>
-        </div>
-      </div>
-
-      <div class="sub-page" id="sub-profile">
-        <p class="settings-title">Profile</p>
-        <div class="field"><label>Full Name</label><input type="text" id="prof-name" placeholder="Your name"/></div>
-        <div class="field"><label>Email</label><input type="email" id="prof-email" readonly/></div>
-        <div class="field"><label>Phone</label><input type="tel" id="prof-phone" placeholder="Your phone number"/></div>
-        <button class="btn-outline" id="btn-save-profile">Save Changes</button>
-      </div>
-
-      <div class="sub-page" id="sub-subscription">
-        <p class="settings-title">Subscription</p>
-        <div class="sub-card">
-          <p class="sub-plan">Yearly Plan</p>
-          <p class="sub-price">$49 <span style="font-size:0.9rem;color:var(--gray);">/ year</span></p>
-          <p class="sub-desc">Full access to your client space, direct chat with Rensé, website status tracking, and personal updates.</p>
-          <p class="sub-renew" id="sub-renew">No active subscription</p>
-        </div>
-        <button class="btn-outline" onclick="showToast('We\'ll send you a payment link shortly.')">Pay in Advance</button>
-        <button class="btn-danger" onclick="confirmCancel()">Cancel Subscription</button>
-      </div>
-
-      <div class="sub-page" id="sub-password">
-        <p class="settings-title">Change Password</p>
-        <div class="field"><label>Current Password</label><input type="password" id="pw-current" placeholder="••••••••"/></div>
-        <div class="field"><label>New Password</label><input type="password" id="pw-new" placeholder="Min. 8 chars, 1 capital, 1 special"/></div>
-        <div class="field"><label>Confirm New Password</label><input type="password" id="pw-confirm" placeholder="••••••••"/></div>
-        <button class="btn-outline" id="btn-change-pw">Update Password</button>
-        <p class="msg" id="pw-msg" style="font-size:0.78rem;margin-top:0.8rem;font-style:italic;min-height:1rem;"></p>
-      </div>
-
-      <div class="sub-page" id="sub-contact">
-        <p class="settings-title">Contact &amp; Support</p>
-        <div onclick="showPage('chat');hideSub();" class="contact-block">
-          <span class="contact-block-icon">💬</span>
-          <div><p class="contact-block-label">Live Chat</p><p class="contact-block-val">Message Rensé directly</p></div>
-          <span style="margin-left:auto;color:var(--gray);">›</span>
-        </div>
-        <a href="mailto:hello@rense.se" class="contact-block">
-          <span class="contact-block-icon">✉️</span>
-          <div><p class="contact-block-label">Email</p><p class="contact-block-val">hello@rense.se</p></div>
-        </a>
-      </div>
-
-      <div class="sub-page" id="sub-help">
-        <div class="sub-page-wrap">
+    <div class="dash-grid">
+      <button type="button" class="dash-tile" onclick="showPage('chat')">
+        <div class="dash-tile-top"><span class="dash-tile-label">Chat</span><span class="dash-tile-icon">💬</span></div>
+        <span class="dash-tile-num" id="chat-badge-num">0</span>
+        <span class="dash-tile-hint" id="chat-hint">Open chat →</span>
+      </button>
+      <button type="button" class="dash-tile" id="tile-website" onclick="openWebsite()">
+        <div class="dash-tile-top"><span class="dash-tile-label">Website</span><span class="dash-tile-icon" id="ws-icon">🌐</span></div>
+        <span class="dash-status" id="ws-card-status">Not started</span>
+        <span class="dash-tile-hint" id="ws-hint" style="display:none;">Visit ↗</span>
+      </button>
+      <button type="button" class="dash-tile full" onclick="showPage('settings')">
+        <div class="dash-tile-settings-left">
+          <div class="dash-settings-icon">⚙️</div>
           <div>
-            <p class="settings-title">Help</p>
-            <div class="update-item" style="margin-bottom:1rem;">
-              <p class="update-date">How do I update my website?</p>
-              <p class="update-text">Send a message in your chat with Rensé and describe the changes you'd like.</p>
-            </div>
-            <div class="update-item" style="margin-bottom:1rem;">
-              <p class="update-date">How do I pay my subscription?</p>
-              <p class="update-text">You'll receive a payment link via email before your renewal date. You can also pay in advance under Settings → Subscription.</p>
-            </div>
-            <div class="update-item">
-              <p class="update-date">How do I cancel?</p>
-              <p class="update-text">You can cancel anytime under Settings → Subscription. Your access continues until the end of your billing period.</p>
-            </div>
-          </div>
-          <div class="settings-footer">
-            <button type="button" class="btn-delete-account" onclick="showSub('delete')">Delete account</button>
+            <div class="dash-tile-label">Settings</div>
+            <div class="dash-settings-sub">My Account</div>
           </div>
         </div>
-      </div>
-
-      <div class="sub-page" id="sub-tos">
-        <p class="settings-title">Terms of Service</p>
-        <div class="tos-text">
-          <p style="margin-bottom:1rem;">By using Rensé's client services, you agree to these terms. Services are provided on a yearly subscription basis at $49 per year.</p>
-          <p style="margin-bottom:1rem;">Cancellations take effect at the end of the current billing period. No refunds are issued for partial periods.</p>
-          <p style="margin-bottom:1rem;">Rensé retains the right to pause or terminate services in cases of non-payment or violation of these terms.</p>
-          <p>For questions, contact hello@rense.se or use the in-app chat.</p>
+        <span class="dash-chevron">›</span>
+      </button>
+    </div>
+    <div class="progress-card" id="progress-section">
+      <div class="progress-box">
+        <div class="progress-head">
+          <span class="dash-tile-label">Project Progress</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
         </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <div id="progress-steps"></div>
       </div>
-
-      <div class="sub-page" id="sub-delete">
-        <p class="settings-title">Delete Account</p>
-        <p class="delete-warning">This permanently deletes your account and profile data. This cannot be undone.</p>
-        <div class="field"><label for="delete-password">Password</label><input type="password" id="delete-password" placeholder="Enter your password" autocomplete="current-password"/></div>
-        <div class="field"><label for="delete-confirm-input">Type delete to confirm</label><input type="text" id="delete-confirm-input" placeholder="delete" autocomplete="off"/></div>
-        <button type="button" class="btn-danger" id="btn-confirm-delete" disabled>Delete</button>
-        <p class="delete-msg" id="delete-msg"></p>
-      </div>
-
     </div>
   </div>
+
+  <!-- Chat -->
+  <div class="page page-chat" id="page-chat">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user" id="topbar-name-chat"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="showPage('overview')">← Back</button>
+    <div class="chat-header">
+      <div class="chat-avatar">Rensé</div>
+    </div>
+    <div class="chat-divider"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.2);font-size:14px;padding:2rem;">No messages yet. Send a message to get started.</div>
+    </div>
+    <div class="chat-input-bar">
+      <input class="chat-input" id="chat-input" placeholder="Write a message…"/>
+      <button type="button" class="btn-send" id="btn-send-chat">›</button>
+    </div>
+  </div>
+
+  <!-- Settings hub -->
+  <div class="page" id="page-settings">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user" id="topbar-name-settings"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="showPage('overview')">← Back</button>
+    <div class="page-head tight">
+      <p class="eyebrow">Settings</p>
+      <h1 class="headline sm">My Account</h1>
+    </div>
+    <div class="settings-box">
+      <div class="settings-card">
+        <button type="button" class="settings-row" onclick="showSub('profile')">
+          <div class="settings-row-icon">👤</div>
+          <div class="settings-row-label">Profile</div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="openSubscription()">
+          <div class="settings-row-icon">💳</div>
+          <div style="flex:1">
+            <div class="settings-row-label">Subscription</div>
+            <div class="settings-row-sub" id="settings-sub-label">No active plan</div>
+          </div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="showSub('password')">
+          <div class="settings-row-icon">🔒</div>
+          <div class="settings-row-label">Change Password</div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="showSub('support')">
+          <div class="settings-row-icon">📞</div>
+          <div class="settings-row-label">Contact &amp; Support</div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="showSub('help')">
+          <div class="settings-row-icon">❓</div>
+          <div class="settings-row-label">Help</div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="showSub('tos')">
+          <div class="settings-row-icon">📄</div>
+          <div class="settings-row-label">Terms of Service</div>
+          <span class="settings-chevron">›</span>
+        </button>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button type="button" class="btn-signout" id="btn-signout">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Sub: Profile -->
+  <div class="sub-page" id="sub-profile">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Settings</p><h1 class="headline sm">Profile</h1></div>
+    <div class="field" style="margin-top:20px"><label>Full Name</label><input type="text" id="prof-name" placeholder="Your name"/></div>
+    <div class="field"><label>Email</label><input type="email" id="prof-email" readonly/></div>
+    <div class="field"><label>Phone</label><input type="tel" id="prof-phone" placeholder="Your phone number"/></div>
+    <button type="button" class="btn-primary" id="btn-save-profile">Save Changes</button>
+  </div>
+
+  <!-- Sub: Subscribe pitch -->
+  <div class="sub-page" id="sub-subscribe">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight">
+      <p class="eyebrow">Website Plan</p>
+      <h1 class="headline sm">Activate your subscription.</h1>
+      <p class="subtext">To keep your website live, a yearly subscription is required. This covers the operational costs of running your site.</p>
+    </div>
+    <div class="price-block">
+      <div class="price-label" id="sub-plan-name">Yearly Maintenance</div>
+      <div class="price-row">
+        <span class="price-amount" id="sub-price-display">—</span>
+        <span class="price-period">/ year</span>
+      </div>
+      <div class="price-note">Billed once yearly · Renews automatically</div>
+    </div>
+    <p class="eyebrow" style="padding:24px 24px 0;margin:0">What this covers</p>
+    <div class="covers-list">
+      <div><div class="covers-item-title">Hosting &amp; deployment</div><div class="covers-item-desc">Your site runs on managed infrastructure, always on.</div></div>
+      <div><div class="covers-item-title">Domain &amp; SSL</div><div class="covers-item-desc">Your domain registration, renewal, and certificate.</div></div>
+      <div><div class="covers-item-title">Storage &amp; database</div><div class="covers-item-desc">All your content, media, and data, backed up.</div></div>
+      <div><div class="covers-item-title">Logins &amp; security</div><div class="covers-item-desc">Authentication, access control, and monitoring.</div></div>
+    </div>
+    <button type="button" class="btn-primary" id="btn-proceed-payment" onclick="proceedToStripe()">Proceed to payment</button>
+    <p class="stripe-note">Secure checkout via Stripe · Cancel anytime under Contact &amp; Support</p>
+  </div>
+
+  <!-- Sub: Active subscription -->
+  <div class="sub-page" id="sub-active-sub">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Settings</p><h1 class="headline sm">Subscription</h1></div>
+    <div class="billing-card" id="active-billing-card">
+      <div class="billing-row"><span class="billing-label">Plan</span><span class="billing-value" id="active-plan">—</span></div>
+      <div class="billing-row"><span class="billing-label">Amount</span><span class="billing-value gold" id="active-amount">—</span></div>
+      <div class="billing-row"><span class="billing-label">Next billing</span><span class="billing-value" id="active-renew">—</span></div>
+      <div class="billing-row"><span class="billing-label">Status</span><span class="status-pill active" id="active-status">Active</span></div>
+    </div>
+    <p class="form-msg" id="active-sub-note" style="margin-top:16px"></p>
+  </div>
+
+  <!-- Sub: Password -->
+  <div class="sub-page" id="sub-password">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Settings</p><h1 class="headline sm">Change Password</h1></div>
+    <div class="field" style="margin-top:20px"><label>Current Password</label><input type="password" id="pw-current" placeholder="••••••••"/></div>
+    <div class="field"><label>New Password</label><input type="password" id="pw-new" placeholder="Min. 8 chars, 1 capital, 1 special"/></div>
+    <div class="field"><label>Confirm New Password</label><input type="password" id="pw-confirm" placeholder="••••••••"/></div>
+    <button type="button" class="btn-primary" id="btn-change-pw">Update Password</button>
+    <p class="form-msg" id="pw-msg"></p>
+  </div>
+
+  <!-- Sub: Support -->
+  <div class="sub-page" id="sub-support">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Settings</p><h1 class="headline sm">Contact &amp; Support</h1></div>
+    <div class="settings-box">
+      <div class="settings-card">
+        <a href="mailto:hello@rense.se" class="settings-row" style="text-decoration:none;color:inherit">
+          <div class="settings-row-icon">✉️</div>
+          <div><div class="settings-row-label">Email us</div><div class="settings-row-sub">hello@rense.se</div></div>
+        </a>
+        <button type="button" class="settings-row" onclick="openChat()">
+          <div class="settings-row-icon">💬</div>
+          <div><div class="settings-row-label">Chat with Rensé</div><div class="settings-row-sub">Available in your dashboard</div></div>
+          <span class="settings-chevron">›</span>
+        </button>
+      </div>
+    </div>
+    <div id="cancel-section" class="billing-cancel-wrap" style="display:none">
+      <p class="eyebrow">Billing</p>
+      <button type="button" class="btn-cancel-sub" id="btn-show-cancel" onclick="showCancelConfirm()">Cancel subscription</button>
+      <div class="cancel-box" id="cancel-confirm-box" hidden>
+        <h3>Cancel subscription?</h3>
+        <p>Access continues until <strong id="cancel-until">—</strong>.</p>
+        <p>Contact Rensé to confirm cancellation and discuss your domain.</p>
+        <div class="cancel-btns">
+          <button type="button" class="cancel-yes" onclick="confirmCancel()">Yes, cancel</button>
+          <button type="button" class="cancel-no" onclick="hideCancelConfirm()">Keep plan</button>
+        </div>
+      </div>
+    </div>
+    <div class="delete-notice" id="cancelled-notice" hidden style="margin-top:28px"></div>
+  </div>
+
+  <!-- Sub: Help -->
+  <div class="sub-page" id="sub-help">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Help</p><h1 class="headline sm">FAQ</h1></div>
+    <div style="padding:24px 24px 0">
+      <div class="faq-item"><p class="faq-q">How do I update my website?</p><p class="faq-a">Send a message in your chat with Rensé and describe the changes you'd like.</p></div>
+      <div class="faq-item"><p class="faq-q">How do I pay my subscription?</p><p class="faq-a">Go to Settings → Subscription. Your plan and amount are set by Rensé — checkout is handled securely via Stripe.</p></div>
+      <div class="faq-item"><p class="faq-q">How do I cancel?</p><p class="faq-a">Go to Settings → Contact &amp; Support to cancel. Your access continues until the end of your billing period.</p></div>
+    </div>
+    <div class="settings-footer">
+      <button type="button" class="btn-text-danger" onclick="showSub('delete')">Delete Account</button>
+    </div>
+  </div>
+
+  <!-- Sub: ToS -->
+  <div class="sub-page" id="sub-tos">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Legal</p><h1 class="headline sm">Terms of Service</h1></div>
+    <div style="padding:24px 24px 0;font-size:14px;color:rgba(255,255,255,0.45);line-height:1.8;font-style:italic">
+      <p style="margin-bottom:1rem">By using Rensé's client services, you agree to these terms. Services are provided on a yearly subscription basis at the rate assigned to your account.</p>
+      <p style="margin-bottom:1rem">Cancellations take effect at the end of the current billing period. No refunds are issued for partial periods.</p>
+      <p>For questions, contact hello@rense.se or use the in-app chat.</p>
+    </div>
+  </div>
+
+  <!-- Sub: Delete -->
+  <div class="sub-page" id="sub-delete">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="showSub('help')">← Back</button>
+    <div class="page-head tight"><p class="eyebrow">Settings</p><h1 class="headline sm">Delete Account</h1></div>
+    <p class="subtext" style="padding:0 24px">This permanently deletes your account and profile data. This cannot be undone.</p>
+    <div class="delete-notice" id="delete-subscription-notice" hidden>You have an active subscription. Deleting your account will also terminate your subscription immediately.</div>
+    <div class="field" style="margin-top:20px"><label>Password</label><input type="password" id="delete-password" autocomplete="current-password"/></div>
+    <div class="field"><label>Type delete to confirm</label><input type="text" id="delete-confirm-input" autocomplete="off"/></div>
+    <button type="button" class="btn-danger-outline" id="btn-confirm-delete" disabled style="color:rgba(255,80,80,0.7)">Delete Account</button>
+    <p class="form-msg" id="delete-msg"></p>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -373,43 +523,74 @@
     markConversationRead, renderClientMessages
   } from './js/chat-service.js';
   import { ensureUserProfile, deleteUserData } from './js/user-service.js';
-  import { renderWebsiteSteps } from './js/website-stages.js';
+  import { WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
+  import {
+    getClientSubscriptionState, getStripeCheckoutUrl, getDisplayAmount
+  } from './js/subscription-plans.js';
 
   let currentUser = null;
+  let currentUserData = {};
   let clientDisplayName = '';
   let unsubChatMessages = null;
   let unsubChatMeta = null;
   let unsubUserDoc = null;
 
-  function setWsUrlElement(text, href) {
-    let urlEl = document.getElementById('ws-url');
-    if (!urlEl) return;
-    if (href) {
-      if (urlEl.tagName === 'SPAN') {
-        const a = document.createElement('a');
-        a.className = 'ws-url';
-        a.id = 'ws-url';
-        a.href = href;
-        a.textContent = text;
-        urlEl.replaceWith(a);
-      } else {
-        urlEl.textContent = text;
-        urlEl.href = href;
-        urlEl.style.color = '';
-        urlEl.style.fontStyle = '';
+  function renderProgressSteps(stageIndex) {
+    const idx = Number.isInteger(stageIndex) ? stageIndex : -1;
+    const pct = getStageProgressPercent(idx);
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    const container = document.getElementById('progress-steps');
+    container.innerHTML = WEBSITE_STAGES.map((label, i) => {
+      const done = idx >= 0 && i <= idx;
+      return `<div class="progress-step">
+        <div class="progress-step-icon${done ? ' done' : ''}">${done ? '✓' : ''}</div>
+        <span class="progress-step-label${done ? ' done' : ''}">${label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function updateSubscriptionUI(data) {
+    currentUserData = data || {};
+    const sub = getClientSubscriptionState(data);
+    window.clientSubscriptionState = sub;
+
+    const settingsLabel = document.getElementById('settings-sub-label');
+    if (settingsLabel) {
+      settingsLabel.textContent = sub.settingsSub;
+      settingsLabel.classList.toggle('active', sub.isActive && !sub.cancelled);
+    }
+
+    const priceEl = document.getElementById('sub-price-display');
+    const planNameEl = document.getElementById('sub-plan-name');
+    if (priceEl) priceEl.textContent = sub.amountLabel !== '—' ? sub.amountLabel : '—';
+    if (planNameEl) planNameEl.textContent = sub.planLabel ? `${sub.planLabel} · Yearly` : 'Yearly Maintenance';
+
+    document.getElementById('active-plan').textContent = sub.planLabel || 'Yearly';
+    document.getElementById('active-amount').textContent = sub.amountPerYear;
+    document.getElementById('active-renew').textContent = sub.cancelled ? '—' : sub.nextBilling;
+    const statusEl = document.getElementById('active-status');
+    statusEl.textContent = sub.cancelled ? 'Cancelled' : 'Active';
+    statusEl.className = 'status-pill ' + (sub.cancelled ? 'cancelled' : 'active');
+    document.getElementById('active-billing-card').classList.toggle('inactive', sub.cancelled);
+
+    const cancelSection = document.getElementById('cancel-section');
+    if (cancelSection) cancelSection.style.display = sub.isActive && !sub.cancelled ? 'block' : 'none';
+    const cancelledNotice = document.getElementById('cancelled-notice');
+    if (cancelledNotice) {
+      cancelledNotice.hidden = !sub.cancelled;
+      if (sub.cancelled) {
+        cancelledNotice.textContent = `Subscription cancelled. Access until ${sub.nextBilling !== '—' ? sub.nextBilling : 'end of billing period'}.`;
       }
-    } else if (urlEl.tagName === 'A') {
-      const span = document.createElement('span');
-      span.className = 'ws-url';
-      span.id = 'ws-url';
-      span.style.color = 'var(--gray)';
-      span.style.fontStyle = 'italic';
-      span.textContent = text;
-      urlEl.replaceWith(span);
-    } else {
-      urlEl.textContent = text;
-      urlEl.style.color = 'var(--gray)';
-      urlEl.style.fontStyle = 'italic';
+    }
+    const cancelUntil = document.getElementById('cancel-until');
+    if (cancelUntil) cancelUntil.textContent = sub.nextBilling !== '—' ? sub.nextBilling : 'end of billing period';
+
+    const proceedBtn = document.getElementById('btn-proceed-payment');
+    if (proceedBtn) {
+      const url = data?.subscriptionPlan ? getStripeCheckoutUrl(data.subscriptionPlan, { email: currentUser?.email, uid: currentUser?.uid }) : null;
+      proceedBtn.disabled = !sub.hasAssignedPlan || sub.isActive;
+      proceedBtn.textContent = url ? 'Proceed to payment' : (sub.hasAssignedPlan ? 'Payment link pending — contact Rensé' : 'No plan assigned yet');
     }
   }
 
@@ -418,44 +599,55 @@
     const hasWebsite = !!data.websiteUrl;
     const isActive = hasWebsite && data.websiteActive !== false;
     const stage = Number.isInteger(data.websiteStage) ? data.websiteStage : -1;
+    const pct = getStageProgressPercent(stage);
+
+    const statusEl = document.getElementById('ws-card-status');
+    const tile = document.getElementById('tile-website');
+    const hint = document.getElementById('ws-hint');
+    const progressSection = document.getElementById('progress-section');
+
+    window.clientWebsiteUrl = null;
 
     if (!isClient) {
-      setWsUrlElement('Not set up yet');
-      document.getElementById('ws-badge').className = 'ws-badge inactive';
-      document.getElementById('ws-badge').textContent = '—';
-      document.getElementById('ws-card-status').className = 'card-status inactive';
-      document.getElementById('ws-card-status').textContent = '—';
-      renderWebsiteSteps(document.getElementById('ws-steps'), -1, { labelClass: 'ws-step-text' });
+      statusEl.textContent = '—';
+      statusEl.className = 'dash-status';
+      tile.classList.remove('gold-border');
+      hint.style.display = 'none';
+      progressSection.style.display = 'none';
       return;
     }
+
+    progressSection.style.display = 'block';
+    renderProgressSteps(stage);
 
     if (hasWebsite) {
       const clean = String(data.websiteUrl).replace(/^https?:\/\//, '');
-      setWsUrlElement(clean, 'https://' + clean);
+      window.clientWebsiteUrl = 'https://' + clean;
+      const live = pct === 100 && isActive;
+      statusEl.textContent = live ? 'Live' : (pct > 0 ? 'In Progress' : 'Not started');
+      statusEl.className = 'dash-status' + (live || pct > 0 ? ' live' : '');
+      tile.classList.add('gold-border');
+      hint.style.display = 'block';
     } else {
-      setWsUrlElement('Not set up yet');
+      statusEl.textContent = 'In progress';
+      statusEl.className = 'dash-status live';
+      tile.classList.remove('gold-border');
+      hint.style.display = 'none';
     }
+  }
 
-    document.getElementById('ws-badge').className = 'ws-badge ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
-    document.getElementById('ws-badge').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : '—';
-    document.getElementById('ws-card-status').className = 'card-status ' + (hasWebsite ? (isActive ? 'active' : 'inactive') : 'inactive');
-    document.getElementById('ws-card-status').textContent = hasWebsite ? (isActive ? '● Active' : '● Inactive') : 'In progress';
-    renderWebsiteSteps(document.getElementById('ws-steps'), stage, { labelClass: 'ws-step-text' });
+  function setUserName(name) {
+    document.getElementById('topbar-name').textContent = name;
+    document.getElementById('topbar-name-chat').textContent = name;
+    document.getElementById('topbar-name-settings').textContent = name;
+    document.querySelectorAll('.sub-nav-name').forEach((el) => { el.textContent = name; });
+    document.getElementById('greeting-name').textContent = 'Welcome, ' + name + '.';
   }
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-    if (!(await isEmailVerified(user))) {
-      window.location.href = 'login.html';
-      return;
-    }
-    if (await isAdminUser(user)) {
-      window.location.href = 'admin.html';
-      return;
-    }
+    if (!user) { window.location.href = 'login.html'; return; }
+    if (!(await isEmailVerified(user))) { window.location.href = 'login.html'; return; }
+    if (await isAdminUser(user)) { window.location.href = 'admin.html'; return; }
 
     currentUser = user;
     document.getElementById('app').style.display = 'block';
@@ -464,53 +656,71 @@
     const data = snap.exists() ? snap.data() : {};
     const name = user.displayName || data.name || user.email.split('@')[0];
 
-    await ensureUserProfile(user.uid, {
-      name,
-      email: user.email,
-      phone: data.phone || ''
-    });
+    await ensureUserProfile(user.uid, { name, email: user.email, phone: data.phone || '' });
 
-    document.getElementById('topbar-name').textContent = name;
-    document.getElementById('greeting-name').textContent = 'Welcome, ' + name + '.';
+    setUserName(name);
     document.getElementById('prof-name').value = name;
     document.getElementById('prof-email').value = user.email;
     document.getElementById('prof-phone').value = data.phone || '';
 
     updateWebsiteUI(data);
-
-    if (data.renewDate) {
-      document.getElementById('sub-renew').textContent = '🔄 Renews ' + data.renewDate;
-    }
+    updateSubscriptionUI(data);
 
     if (unsubUserDoc) unsubUserDoc();
     unsubUserDoc = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
       const live = docSnap.exists() ? docSnap.data() : {};
       updateWebsiteUI(live);
+      updateSubscriptionUI(live);
     });
 
     startClientChat(user, name);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      showToast('Payment received — your subscription will activate shortly.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   });
+
+  let clientLastMessages = [];
+  let clientLastConvoData = null;
+
+  function updateClientChatBadge(conversationData) {
+    if (conversationData !== undefined) clientLastConvoData = conversationData;
+    const unread = clientLastConvoData?.unreadByClient || 0;
+    const last = clientLastMessages[clientLastMessages.length - 1];
+    const lastFromRense = last?.senderRole === 'admin';
+    let display = unread;
+    if (!window.clientChatVisible && lastFromRense) {
+      display = Math.max(unread, 1);
+    }
+    const numEl = document.getElementById('chat-badge-num');
+    const hintEl = document.getElementById('chat-hint');
+    if (!numEl || !hintEl) return;
+    numEl.textContent = String(display);
+    numEl.classList.toggle('has-unread', display > 0);
+    hintEl.textContent = display > 0 ? 'New messages →' : 'Open chat →';
+  }
+  window.refreshClientChatBadge = () => updateClientChatBadge();
 
   function startClientChat(user, name) {
     clientDisplayName = name;
+    clientLastMessages = [];
     if (unsubChatMessages) unsubChatMessages();
     if (unsubChatMeta) unsubChatMeta();
 
+    let lastConvoData = null;
+
     unsubChatMessages = subscribeToMessages(user.uid, (snap) => {
-      const messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderClientMessages(document.getElementById('chat-messages'), messages, name);
+      clientLastMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderClientMessages(document.getElementById('chat-messages'), clientLastMessages, name);
+      updateClientChatBadge(lastConvoData);
       if (window.clientChatVisible) markConversationRead(user.uid, 'client');
     });
 
     unsubChatMeta = subscribeToConversation(user.uid, (data) => {
-      const badge = document.getElementById('chat-badge');
-      const unread = data?.unreadByClient || 0;
-      if (unread > 0) {
-        badge.style.display = 'flex';
-        badge.textContent = unread > 9 ? '9+' : unread;
-      } else {
-        badge.style.display = 'none';
-      }
+      lastConvoData = data;
+      updateClientChatBadge(data);
     });
   }
 
@@ -519,17 +729,12 @@
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text) return;
-
     const btn = document.getElementById('btn-send-chat');
     btn.disabled = true;
     try {
       await sendChatMessage(currentUser.uid, {
-        text,
-        senderId: currentUser.uid,
-        senderRole: 'client',
-        senderName: clientDisplayName,
-        clientName: clientDisplayName,
-        clientEmail: currentUser.email
+        text, senderId: currentUser.uid, senderRole: 'client', senderName: clientDisplayName,
+        clientName: clientDisplayName, clientEmail: currentUser.email
       });
       input.value = '';
     } catch (err) {
@@ -549,49 +754,56 @@
     if (currentUser) await markConversationRead(currentUser.uid, 'client');
   };
 
+  window.proceedToStripe = function proceedToStripe() {
+    const planId = currentUserData.subscriptionPlan;
+    if (!planId) {
+      showToast('No subscription plan assigned yet. Contact Rensé.');
+      return;
+    }
+    const url = getStripeCheckoutUrl(planId, { email: currentUser?.email, uid: currentUser?.uid });
+    if (!url) {
+      showToast('Payment link not configured yet. Contact Rensé.');
+      return;
+    }
+    window.location.href = url;
+  };
+
+  window.openSubscription = function openSubscription() {
+    const sub = getClientSubscriptionState(currentUserData);
+    if (sub.isActive) showSub('active-sub');
+    else if (sub.hasAssignedPlan) showSub('subscribe');
+    else showSub('subscribe');
+  };
+
+  window.showCancelConfirm = function showCancelConfirm() {
+    document.getElementById('btn-show-cancel').style.display = 'none';
+    document.getElementById('cancel-confirm-box').hidden = false;
+  };
+  window.hideCancelConfirm = function hideCancelConfirm() {
+    document.getElementById('btn-show-cancel').style.display = 'block';
+    document.getElementById('cancel-confirm-box').hidden = true;
+  };
+
+  window.confirmCancel = async function confirmCancel() {
+    if (!currentUser) return;
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { subscriptionCancelled: true }, { merge: true });
+      hideCancelConfirm();
+      showToast('Subscription cancellation recorded. Rensé will confirm shortly.');
+    } catch (err) {
+      console.error(err);
+      showToast('Could not cancel. Please contact hello@rense.se');
+    }
+  };
+
+  window.openWebsite = function openWebsite() {
+    if (window.clientWebsiteUrl) window.open(window.clientWebsiteUrl, '_blank');
+  };
+
   document.getElementById('btn-signout').addEventListener('click', async () => {
     if (!confirm('Are you sure you want to sign out?')) return;
     await signOut(auth);
     window.location.href = 'login.html';
-  });
-
-  const deleteConfirmInput = document.getElementById('delete-confirm-input');
-  const deleteBtn = document.getElementById('btn-confirm-delete');
-  const deleteMsg = document.getElementById('delete-msg');
-
-  deleteConfirmInput.addEventListener('input', () => {
-    deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() !== 'delete';
-  });
-
-  deleteBtn.addEventListener('click', async () => {
-    if (!currentUser) return;
-    const password = document.getElementById('delete-password').value;
-    if (deleteConfirmInput.value.trim().toLowerCase() !== 'delete') return;
-
-    if (!password) {
-      deleteMsg.style.color = '#e74c3c';
-      deleteMsg.textContent = 'Please enter your password.';
-      return;
-    }
-
-    deleteBtn.disabled = true;
-    deleteMsg.style.color = '';
-    deleteMsg.textContent = 'Deleting account…';
-
-    try {
-      const cred = EmailAuthProvider.credential(currentUser.email, password);
-      await reauthenticateWithCredential(currentUser, cred);
-      await deleteUserData(currentUser.uid);
-      await deleteUser(currentUser);
-      window.location.href = 'login.html';
-    } catch (err) {
-      console.error(err);
-      deleteMsg.style.color = '#e74c3c';
-      deleteMsg.textContent = err.code === 'auth/wrong-password'
-        ? 'Password is incorrect.'
-        : 'Could not delete account. Please try again.';
-      deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() !== 'delete';
-    }
   });
 
   document.getElementById('btn-save-profile').addEventListener('click', async () => {
@@ -600,8 +812,7 @@
     const phone = document.getElementById('prof-phone').value.trim();
     await updateProfile(currentUser, { displayName: name });
     await setDoc(doc(db, 'users', currentUser.uid), { name, phone, email: currentUser.email }, { merge: true });
-    document.getElementById('topbar-name').textContent = name;
-    document.getElementById('greeting-name').textContent = 'Welcome, ' + name + '.';
+    setUserName(name);
     showToast('Profile saved ✓');
   });
 
@@ -610,78 +821,87 @@
     const newPw = document.getElementById('pw-new').value;
     const confirm = document.getElementById('pw-confirm').value;
     const msg = document.getElementById('pw-msg');
-
-    if (!curr || !newPw) {
-      msg.style.color = '#e74c3c';
-      msg.textContent = 'Please fill in all fields.';
-      return;
-    }
-    if (newPw !== confirm) {
-      msg.style.color = '#e74c3c';
-      msg.textContent = 'Passwords do not match.';
-      return;
-    }
+    if (!curr || !newPw) { msg.textContent = 'Please fill in all fields.'; return; }
+    if (newPw !== confirm) { msg.textContent = 'Passwords do not match.'; return; }
     if (!/(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}/.test(newPw)) {
-      msg.style.color = '#e74c3c';
-      msg.textContent = 'Password must have 8+ chars, 1 capital, 1 special.';
-      return;
+      msg.textContent = 'Password must have 8+ chars, 1 capital, 1 special.'; return;
     }
-
     try {
       const cred = EmailAuthProvider.credential(currentUser.email, curr);
       await reauthenticateWithCredential(currentUser, cred);
       await updatePassword(currentUser, newPw);
-      msg.style.color = '#2ecc71';
       msg.textContent = 'Password updated ✓';
-      ['pw-current', 'pw-new', 'pw-confirm'].forEach(id => document.getElementById(id).value = '');
+      ['pw-current', 'pw-new', 'pw-confirm'].forEach((id) => { document.getElementById(id).value = ''; });
     } catch {
-      msg.style.color = '#e74c3c';
       msg.textContent = 'Current password is incorrect.';
+    }
+  });
+
+  const deleteConfirmInput = document.getElementById('delete-confirm-input');
+  const deleteBtn = document.getElementById('btn-confirm-delete');
+  deleteConfirmInput.addEventListener('input', () => {
+    deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() !== 'delete';
+  });
+  deleteBtn.addEventListener('click', async () => {
+    if (!currentUser) return;
+    const password = document.getElementById('delete-password').value;
+    const msg = document.getElementById('delete-msg');
+    if (deleteConfirmInput.value.trim().toLowerCase() !== 'delete') return;
+    if (!password) { msg.textContent = 'Please enter your password.'; return; }
+    if (currentUserData.isClient === true) {
+      if (!confirm('Your active subscription will also be terminated. Continue?')) return;
+    }
+    deleteBtn.disabled = true;
+    msg.textContent = 'Deleting account…';
+    try {
+      const cred = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, cred);
+      await deleteUserData(currentUser.uid);
+      await deleteUser(currentUser);
+      window.location.href = 'login.html';
+    } catch (err) {
+      msg.textContent = err.code === 'auth/wrong-password' ? 'Password is incorrect.' : 'Could not delete account.';
+      deleteBtn.disabled = deleteConfirmInput.value.trim().toLowerCase() === 'delete';
     }
   });
 </script>
 
 <script>
   function showPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('.sub-page').forEach((p) => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
-    if (name === 'settings') hideSub();
+    const wasChat = window.clientChatVisible;
     window.clientChatVisible = name === 'chat';
     if (name === 'chat' && window.markClientChatRead) window.markClientChatRead();
+    if (wasChat !== window.clientChatVisible && window.refreshClientChatBadge) {
+      window.refreshClientChatBadge();
+    }
     window.scrollTo(0, 0);
   }
 
-  function settingsBack() {
-    if (document.querySelector('.sub-page.active')) {
-      hideSub();
-    } else {
-      showPage('overview');
-    }
-  }
-
   function showSub(name) {
-    document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
-    document.querySelector('.settings-page-wrap').style.display = 'none';
+    document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+    document.querySelectorAll('.sub-page').forEach((p) => p.classList.remove('active'));
     document.getElementById('sub-' + name).classList.add('active');
     if (name === 'delete') {
       document.getElementById('delete-confirm-input').value = '';
       document.getElementById('delete-password').value = '';
       document.getElementById('delete-msg').textContent = '';
       document.getElementById('btn-confirm-delete').disabled = true;
+      const sub = window.clientSubscriptionState || {};
+      document.getElementById('delete-subscription-notice').hidden = !sub.isActive;
     }
     window.scrollTo(0, 0);
   }
+
+  function openChat() {
+    showPage('chat');
+  }
+  window.openChat = openChat;
 
   function hideSub() {
-    document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
-    document.querySelector('.settings-page-wrap').style.display = 'flex';
-    window.scrollTo(0, 0);
-  }
-
-  function confirmCancel() {
-    if (confirm('Are you sure you want to cancel your subscription? You will keep access until the end of your billing period.')) {
-      showToast('Subscription cancelled. Access continues until end of billing period.');
-    }
+    showPage('settings');
   }
 
   function showToast(msg) {
@@ -690,6 +910,8 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
   }
+  window.showToast = showToast;
 </script>
+<script src="js/pwa.js"></script>
 </body>
 </html>

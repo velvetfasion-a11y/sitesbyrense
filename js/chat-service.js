@@ -127,7 +127,7 @@ export function renderClientMessages(container, messages, clientName) {
   container.scrollTop = container.scrollHeight;
 }
 
-export function renderAdminMessages(container, messages) {
+export function renderAdminMessages(container, messages, clientUid) {
   if (!messages.length) {
     container.innerHTML = '<div class="chat-empty">No messages yet. Say hello to start the conversation.</div>';
     return;
@@ -135,7 +135,15 @@ export function renderAdminMessages(container, messages) {
   container.innerHTML = messages.map((m) => {
     const isAdmin = m.senderRole === 'admin';
     const time = formatMessageTime(m.createdAt);
-    const sender = `<div class="msg-sender" style="${isAdmin ? 'text-align:right;' : ''}">${escapeHtml(m.senderName || (isAdmin ? 'Rensé' : 'Client'))}</div>`;
+    const displayName = escapeHtml(m.senderName || (isAdmin ? 'Rensé' : 'Client'));
+    let sender;
+    if (isAdmin) {
+      sender = `<div class="msg-sender" style="text-align:right;">${displayName}</div>`;
+    } else if (clientUid) {
+      sender = `<span role="button" tabindex="0" class="msg-sender profile-name-link" data-return-tab="chat" data-open-profile="${escapeHtml(clientUid)}">${displayName}</span>`;
+    } else {
+      sender = `<div class="msg-sender">${displayName}</div>`;
+    }
     if (isAdmin) {
       return `<div style="align-self:flex-end;"><div class="msg-bubble me">${sender}${escapeHtml(m.text)}</div><div class="msg-time" style="text-align:right;">${time}</div></div>`;
     }
