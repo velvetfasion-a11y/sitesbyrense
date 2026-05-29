@@ -129,7 +129,7 @@
     background: transparent; border-radius: 4px; padding: 2px 6px;
   }
   .user-badge.client { color: var(--green); border: 1px solid var(--green); }
-  .user-badge.inactive { color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.12); }
+  .user-badge.registered { color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.12); }
   .user-badge.deleted { color: #f87171; border: 1px solid rgba(248,113,113,0.55); }
   .user-card.is-deleted { opacity: 0.55; }
   .user-email { font-size: 13px; color: rgba(255,255,255,0.25); margin-top: 3px; letter-spacing: -0.1px; }
@@ -184,6 +184,7 @@
   }
   .status-badge.client { color: var(--green); border-color: var(--green); }
   .status-badge.inactive { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.15); }
+  .status-badge.registered { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.15); }
   .status-badge.deleted { color: #f87171; border-color: rgba(248,113,113,0.55); }
 
   .prof-deleted-banner {
@@ -473,7 +474,10 @@
     border: 1px solid var(--green); color: var(--green); border-radius: 4px; padding: 3px 8px;
   }
   .sub-status.inactive {
-    border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35);
+  }
+  .sub-status.registered {
+    border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35);
   }
   .sub-card.inactive { border-color: rgba(255,255,255,0.08); }
   .sub-plan-select {
@@ -640,7 +644,7 @@
         </div>
       </div>
       <div class="profile-header-right">
-        <span class="status-badge" id="prof-status-badge">○ Inactive</span>
+        <span class="status-badge" id="prof-status-badge">○ Registered</span>
         <button type="button" class="toggle" id="client-toggle" onclick="toggleClientStatus()"><span class="toggle-knob"></span></button>
       </div>
     </div>
@@ -831,7 +835,7 @@
   function getUserStatusBadge(u) {
     if (isDeletedUser(u)) return { text: 'Deleted', cls: 'deleted' };
     if (u.isClient === true) return { text: 'Client', cls: 'client' };
-    return { text: 'Inactive', cls: 'inactive' };
+    return { text: 'Registered', cls: 'registered' };
   }
 
   function formatJoined(iso) {
@@ -881,14 +885,15 @@
     if (tog) tog.disabled = !!window._clientTogglePending;
     const badge = document.getElementById('prof-status-badge');
     if (badge) {
-      badge.textContent = isClient ? '● Client' : '○ Inactive';
+      badge.textContent = isClient ? '● Client' : '○ Registered';
       badge.classList.toggle('client', isClient);
-      badge.classList.toggle('inactive', !isClient);
+      badge.classList.toggle('registered', !isClient);
+      badge.classList.toggle('inactive', false);
     }
   }
 
   function isInactiveUser(data) {
-    return data && !isDeletedUser(data) && data.isClient !== true;
+    return isDeletedUser(data);
   }
 
   function canAdminSendToUser(uid) {
@@ -897,7 +902,9 @@
   }
 
   function setChatComposerState(uid) {
+    const data = uid ? usersMap.get(uid) || {} : {};
     const canSend = uid ? canAdminSendToUser(uid) : false;
+    const deleted = isDeletedUser(data);
     const input = document.getElementById('chat-input');
     const btn = document.getElementById('btn-chat-send');
     const bar = document.querySelector('.chat-input-bar');
@@ -905,7 +912,9 @@
       input.disabled = !canSend;
       input.placeholder = canSend
         ? 'Message as Rensé…'
-        : 'This account is inactive — read only';
+        : deleted
+        ? 'This account was deleted — read only'
+        : 'Enable client status to send messages';
       if (!canSend) input.value = '';
     }
     if (btn) btn.disabled = !canSend;
@@ -955,7 +964,6 @@
     const since = formatJoined(data.createdAt);
     const isClient = data.isClient === true;
     const terminated = isDeletedUser(data);
-    const inactive = isInactiveUser(data);
     const websiteActive = data.websiteActive !== false;
 
     const avatar = document.getElementById('prof-avatar');
@@ -979,16 +987,17 @@
 
     const badge = document.getElementById('prof-status-badge');
     if (badge) {
-      badge.textContent = terminated ? '○ Deleted' : isClient ? '● Client' : '○ Inactive';
+      badge.textContent = terminated ? '○ Deleted' : isClient ? '● Client' : '○ Registered';
       badge.classList.toggle('client', isClient && !terminated);
-      badge.classList.toggle('inactive', !isClient && !terminated);
+      badge.classList.toggle('registered', !isClient && !terminated);
+      badge.classList.toggle('inactive', false);
       badge.classList.toggle('deleted', terminated);
     }
 
     const clientToggle = document.getElementById('client-toggle');
     if (clientToggle) {
-      clientToggle.disabled = terminated || inactive;
-      clientToggle.style.display = terminated || inactive ? 'none' : '';
+      clientToggle.disabled = terminated;
+      clientToggle.style.display = terminated ? 'none' : '';
       syncToggle(clientToggle, terminated ? false : isClient);
     }
 
@@ -997,10 +1006,10 @@
     const inactiveBanner = document.getElementById('prof-inactive-banner');
     if (profilePage) {
       profilePage.classList.toggle('profile-is-deleted', terminated);
-      profilePage.classList.toggle('profile-is-inactive', inactive);
+      profilePage.classList.toggle('profile-is-inactive', terminated);
     }
     if (deletedBanner) deletedBanner.hidden = !terminated;
-    if (inactiveBanner) inactiveBanner.hidden = !inactive;
+    if (inactiveBanner) inactiveBanner.hidden = true;
 
     const websiteSection = document.getElementById('prof-website-section');
     const progressSection = document.getElementById('prof-progress-section');
@@ -1012,7 +1021,7 @@
     const sendInvBtn = document.getElementById('btn-send-invoice');
     if (sendInvBtn) sendInvBtn.style.display = isClient && !terminated ? '' : 'none';
 
-    if (!window._clientTogglePending && !terminated && !inactive) setClientToggleUI(isClient);
+    if (!window._clientTogglePending && !terminated) setClientToggleUI(isClient);
 
     const urlInput = document.getElementById('prof-website-input');
     if (urlInput) {
@@ -1235,7 +1244,7 @@
     const groups = filter === 'clients'
       ? [{ label: 'Clients', users: clients }]
       : filter === 'registered'
-      ? [{ label: 'Inactive', users: registeredOnly }]
+      ? [{ label: 'Registered', users: registeredOnly }]
       : [{ label: 'All Accounts', users: allAccounts }];
 
     const hasAny = groups.some((g) => g.users.length > 0);
@@ -1510,7 +1519,7 @@
       if (activeClientUid) {
         const c = conversationsMap.get(activeClientUid) || {};
         const userData = usersMap.get(activeClientUid) || {};
-        const inactiveThread = userData.isClient !== true || isDeletedUser(userData);
+        const inactiveThread = isDeletedUser(userData);
         const labelEl = document.getElementById('chat-active-label');
         if (labelEl) {
           labelEl.classList.toggle('inactive-thread', inactiveThread);
@@ -1541,7 +1550,7 @@
       const userData = usersMap.get(d.id) || {};
       const name = c.clientName || userData.name || 'Client';
       const isClient = userData.isClient === true && !isDeletedUser(userData);
-      const inactive = !isClient;
+      const inactive = isDeletedUser(userData);
       const active = d.id === activeClientUid;
       const unread = c.unreadByAdmin > 0;
 
@@ -1574,7 +1583,7 @@
     if (activeClientUid) {
       const c = conversationsMap.get(activeClientUid) || {};
       const userData = usersMap.get(activeClientUid) || {};
-      const inactiveThread = userData.isClient !== true || isDeletedUser(userData);
+      const inactiveThread = isDeletedUser(userData);
       const labelEl = document.getElementById('chat-active-label');
       labelEl.classList.toggle('inactive-thread', inactiveThread);
       const n = c.clientName || userData.name || 'Client';
@@ -1738,7 +1747,7 @@
     const text = input.value.trim();
     if (!text || !activeClientUid) return;
     if (!canAdminSendToUser(activeClientUid)) {
-      if (window.showToast) window.showToast('Cannot send messages to inactive accounts.');
+      if (window.showToast) window.showToast(isDeletedUser(usersMap.get(activeClientUid) || {}) ? 'Cannot send messages to deleted accounts.' : 'Enable client status before sending messages.');
       return;
     }
     const user = auth.currentUser;
@@ -1888,8 +1897,8 @@
       return `<option value="${p.id}"${sel}>${esc(p.label)} — ${esc(p.displayAmount)}/yr</option>`;
     }).join('');
     const currentPlan = u.subscriptionPlan || '';
-    const statusLabel = deleted ? 'deleted' : isActive ? 'active' : 'inactive';
-    const statusClass = deleted ? ' deleted' : isActive ? '' : ' inactive';
+    const statusLabel = deleted ? 'deleted' : isActive ? 'active' : 'registered';
+    const statusClass = deleted ? ' deleted' : isActive ? '' : ' registered';
 
     return `<div class="sub-card${isActive ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
       <div class="sub-card-header">
@@ -1902,7 +1911,7 @@
       </div>
       <div class="sub-row">
         <span class="sub-row-label">Plan</span>
-        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${isActive ? '0' : '1'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isActive ? '' : ' disabled'}>
+        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${deleted ? '1' : '0'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isActive ? '' : ' disabled'}>
           <option value=""${!currentPlan ? ' selected' : ''}>No subscription</option>
           ${planOptions}
         </select>
