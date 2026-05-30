@@ -1,5 +1,7 @@
 require('./load-env');
 
+// deploy-rev: 2 — force env reload (Stripe keys)
+
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const {

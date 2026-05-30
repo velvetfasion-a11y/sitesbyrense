@@ -790,7 +790,6 @@
   import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
   import { SUBSCRIPTION_PLANS, getPlanById } from './js/subscription-plans.js';
-  import { assignStripeSubscription } from './js/stripe-client.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -1613,17 +1612,26 @@
     }
     if (!planId) {
       await updateDoc(ref, {
-        isClient: false,
         subscriptionPlan: deleteField(),
         subscriptionAmount: deleteField(),
         subscriptionCurrency: deleteField(),
         subscriptionRenewAt: deleteField(),
+        stripePriceId: deleteField(),
         stripePaymentIntentClientSecret: deleteField(),
         stripeSubscriptionStatus: deleteField(),
       });
       return;
     }
-    await assignStripeSubscription(uid, planId, getPlanById(planId)?.stripePriceId || null);
+    const plan = getPlanById(planId);
+    if (!plan) throw new Error('Unknown subscription plan');
+    await updateDoc(ref, {
+      subscriptionPlan: plan.id,
+      subscriptionAmount: plan.amount,
+      subscriptionCurrency: plan.currency,
+      stripePriceId: plan.stripePriceId,
+      subscriptionCancelled: false,
+      stripePaymentIntentClientSecret: deleteField(),
+    });
   };
 
   function showApp() {
@@ -1995,7 +2003,8 @@
     } catch (err) {
       console.error(err);
       selectEl.value = prevPlanId;
-      if (window.showToast) window.showToast('Could not update subscription.');
+      const msg = err?.message || 'Could not update subscription.';
+      if (window.showToast) window.showToast(msg);
     } finally {
       btn.disabled = false;
       btn.textContent = 'Confirm';
