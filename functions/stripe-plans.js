@@ -4,6 +4,7 @@ const STRIPE_PLANS = [
   { id: 'type-b', label: 'Yearly Type B', amount: 799, currency: 'SEK', stripePriceId: 'price_1TcWBY4CnYstVm6m4xswDgr3' },
   { id: 'type-i', label: 'Yearly Type I', amount: 1020, currency: 'SEK', stripePriceId: 'price_1TcW8Y4CnYstVm6mV1rNLIiz' },
   { id: 'type-ii', label: 'Yearly Type II', amount: 14720, currency: 'SEK', stripePriceId: 'price_1TcW9e4CnYstVm6mCeOEBEs6' },
+  { id: 'family', label: 'Yearly Family', amount: 0, currency: 'SEK', stripePriceId: 'price_1Tcm2i4CnYstVm6mysQF5WaX' },
 ];
 
 const LEGACY_PLAN_ALIASES = {

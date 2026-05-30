@@ -7,6 +7,7 @@ export const STRIPE_PLAN_PRICE_IDS = {
   'type-b': 'price_1TcWBY4CnYstVm6m4xswDgr3',
   'type-i': 'price_1TcW8Y4CnYstVm6mV1rNLIiz',
   'type-ii': 'price_1TcW9e4CnYstVm6mCeOEBEs6',
+  family: 'price_1Tcm2i4CnYstVm6mysQF5WaX',
   basic: 'price_1TcW7T4CnYstVm6mqdZC3gmk',
   plus: 'price_1TcWBY4CnYstVm6m4xswDgr3',
   standard: 'price_1TcW8Y4CnYstVm6mV1rNLIiz',

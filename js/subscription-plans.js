@@ -7,6 +7,7 @@ export const SUBSCRIPTION_PLANS = [
   { id: 'type-b', label: 'Yearly Type B', amount: 799, currency: 'SEK', displayAmount: '799 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-b'] },
   { id: 'type-i', label: 'Yearly Type I', amount: 1020, currency: 'SEK', displayAmount: '1 020 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-i'] },
   { id: 'type-ii', label: 'Yearly Type II', amount: 14720, currency: 'SEK', displayAmount: '14 720 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-ii'] },
+  { id: 'family', label: 'Yearly Family', amount: 0, currency: 'SEK', displayAmount: '—', stripePriceId: STRIPE_PLAN_PRICE_IDS.family },
 ];
 
 /** Old plan ids stored in Firestore before Stripe names were synced. */
