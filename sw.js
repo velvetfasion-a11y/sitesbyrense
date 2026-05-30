@@ -1,4 +1,4 @@
-const CACHE = 'rense-v3';
+const CACHE = 'rense-v4';
 const ASSETS = [
   '/',
   '/index.html',

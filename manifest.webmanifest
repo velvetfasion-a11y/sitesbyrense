@@ -1,7 +1,7 @@
 {
-  "name": "Rensé",
-  "short_name": "Rensé",
-  "description": "Sites by Rensé — custom websites",
+  "name": "Rense.se",
+  "short_name": "Rense.se",
+  "description": "Rense.se — custom websites",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
