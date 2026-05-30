@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png"/>
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#080808"/>
+<title>Checkout — Rensé</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080808;
+    --white: #fff;
+    --green: #22c55e;
+    --gold: #c9a84c;
+    --gold-dark: #a07830;
+    --gold-border: rgba(201,168,76,0.2);
+    --font-ui: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+  }
+  body { font-family: var(--font-ui); background: var(--bg); color: var(--white); min-height: 100vh; }
+  #app { display: none; max-width: 430px; margin: 0 auto; min-height: 100vh; padding-bottom: 60px; }
+  .nav { padding: 24px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+  .nav-brand { font-family: var(--font-serif); font-size: 16px; letter-spacing: 0.28em; color: var(--gold); text-decoration: none; }
+  .nav-user { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .nav-hairline { margin: 14px 24px 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-border), transparent); }
+  .back-btn {
+    background: none; border: none; color: rgba(255,255,255,0.3); font-size: 13px;
+    cursor: pointer; padding: 16px 24px 0; display: flex; align-items: center; gap: 5px;
+    font-family: var(--font-ui); text-decoration: none;
+  }
+  .page-head { padding: 16px 24px 0; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.2); margin: 0 0 8px; text-transform: uppercase; }
+  .headline { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.5px; font-family: var(--font-serif); }
+  .checkout-summary { margin: 18px 24px 0; border: 1px solid var(--gold-border); border-radius: 14px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .checkout-plan { font-size: 14px; font-weight: 600; }
+  .checkout-renew { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .checkout-price { font-size: 17px; font-weight: 700; color: var(--gold); font-family: var(--font-serif); }
+  .checkout-section-label { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); text-transform: uppercase; padding: 22px 24px 8px; margin: 0; }
+  .checkout-methods { margin: 0 24px; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; padding: 16px; }
+  .checkout-stripe-lock { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 20px 24px 0; font-size: 11px; color: rgba(255,255,255,0.13); }
+  .btn-primary {
+    display: block; width: 100%; margin: 16px 0 0; padding: 14px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border: none; border-radius: 12px; color: #000; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: var(--font-ui); text-align: center;
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .form-msg { font-size: 13px; margin: 12px 0 0; min-height: 1rem; font-style: italic; color: rgba(255,255,255,0.4); }
+  .form-msg.error { color: rgba(255,120,120,0.85); font-style: normal; }
+  #payment-element { min-height: 120px; }
+  #loading-state { padding: 48px 24px; text-align: center; color: rgba(255,255,255,0.35); font-size: 14px; }
+  .success-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px; text-align: center; }
+  .success-icon { width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--gold-border); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; font-size: 22px; }
+  .billing-card { border: 1px solid var(--gold-border); border-radius: 18px; overflow: hidden; width: 100%; box-sizing: border-box; margin-bottom: 36px; }
+  .billing-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .billing-row:last-child { border-bottom: none; }
+  .billing-label { font-size: 14px; color: rgba(255,255,255,0.35); }
+  .billing-value { font-size: 14px; font-weight: 500; }
+  .billing-value.gold { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="view-checkout">
+    <div class="nav">
+      <a href="profile.html" class="nav-brand">RENSÉ</a>
+      <span class="nav-user" id="nav-user-name"></span>
+    </div>
+    <div class="nav-hairline"></div>
+    <a href="profile.html" class="back-btn">← Back</a>
+    <div class="page-head">
+      <p class="eyebrow">Secure Checkout</p>
+      <h1 class="headline">Payment</h1>
+    </div>
+    <div class="checkout-summary">
+      <div>
+        <div class="checkout-plan" id="checkout-plan-name">Rensé Yearly Plan</div>
+        <div class="checkout-renew">Billed annually · Renews automatically</div>
+      </div>
+      <span class="checkout-price" id="checkout-plan-price">—</span>
+    </div>
+    <p class="checkout-section-label">Choose payment method</p>
+    <div id="loading-state">Preparing secure checkout…</div>
+    <div class="checkout-methods" id="checkout-form-wrap" hidden>
+      <div id="payment-element"></div>
+      <p class="form-msg" id="checkout-payment-msg"></p>
+      <button type="button" class="btn-primary" id="btn-checkout-pay" disabled>Loading payment form…</button>
+    </div>
+    <p class="checkout-stripe-lock">🔒 Powered by Stripe</p>
+  </div>
+
+  <div id="view-success" hidden>
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <p class="eyebrow" style="color:rgba(201,168,76,0.5);letter-spacing:0.22em">Subscription Active</p>
+      <h1 class="headline" style="margin-bottom:12px">Your website is covered.</h1>
+      <p class="subtext" style="margin-bottom:36px;color:rgba(255,255,255,0.35);font-size:14px;line-height:1.65">Your yearly plan is now active. We'll take care of everything — updates, hosting, and support.</p>
+      <div class="billing-card">
+        <div class="billing-row"><span class="billing-label">Plan</span><span class="billing-value" id="success-plan">—</span></div>
+        <div class="billing-row"><span class="billing-label">Amount</span><span class="billing-value gold" id="success-amount">—</span></div>
+      </div>
+      <a href="profile.html" class="btn-primary" style="text-decoration:none">Go to my account</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { auth } from './firebase-config.js';
+  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { isEmailVerified } from './js/auth-helpers.js';
+  import { parseCheckoutParams } from './js/checkout-nav.js';
+  import { ALLOWED_STRIPE_PRICE_IDS, getPlanIdForPriceId } from './js/stripe-config.js';
+  import { getPlanById, getPlanByPriceId } from './js/subscription-plans.js';
+  import { createSubscription } from './js/stripe-client.js';
+  import { mountSubscriptionPayment } from './js/stripe-payment.js';
+  import { formatCallableError } from './js/callable-error.js';
+
+  let paymentHandle = null;
+  let checkoutStarted = false;
+
+  function showError(message) {
+    const msgEl = document.getElementById('checkout-payment-msg');
+    msgEl.textContent = message;
+    msgEl.classList.add('error');
+  }
+
+  function clearError() {
+    const msgEl = document.getElementById('checkout-payment-msg');
+    msgEl.textContent = '';
+    msgEl.classList.remove('error');
+  }
+
+  function showSuccessView(plan) {
+    document.getElementById('view-checkout').hidden = true;
+    document.getElementById('view-success').hidden = false;
+    if (plan) {
+      document.getElementById('success-plan').textContent = plan.label;
+      document.getElementById('success-amount').textContent = `${plan.displayAmount} / year`;
+    }
+  }
+
+  function waitForLayout() {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  }
+
+  async function startCheckout(user, { priceId, planId }) {
+    if (checkoutStarted) return;
+    checkoutStarted = true;
+
+    const loadingEl = document.getElementById('loading-state');
+    const formWrap = document.getElementById('checkout-form-wrap');
+    const payBtn = document.getElementById('btn-checkout-pay');
+    const mountEl = document.getElementById('payment-element');
+
+    payBtn.disabled = true;
+    payBtn.textContent = 'Loading payment form…';
+    clearError();
+
+    const resolvedPlanId = planId || getPlanIdForPriceId(priceId);
+    const plan = getPlanByPriceId(priceId) || getPlanById(resolvedPlanId);
+
+    if (plan) {
+      document.getElementById('checkout-plan-name').textContent = plan.label;
+      document.getElementById('checkout-plan-price').textContent = plan.displayAmount;
+    }
+
+    try {
+      const result = await createSubscription({ planId: resolvedPlanId, priceId });
+      const clientSecret = result?.clientSecret;
+
+      if (!clientSecret) {
+        throw new Error('Server did not return a payment client secret.');
+      }
+
+      loadingEl.hidden = true;
+      formWrap.hidden = false;
+      await waitForLayout();
+
+      if (paymentHandle) paymentHandle.destroy();
+      paymentHandle = await mountSubscriptionPayment({
+        clientSecret,
+        mountEl,
+        submitBtn: payBtn,
+        onError: showError,
+        onSuccess: () => showSuccessView(plan),
+      });
+    } catch (err) {
+      console.error(err);
+      loadingEl.hidden = false;
+      loadingEl.textContent = formatCallableError(err);
+      formWrap.hidden = true;
+      payBtn.disabled = true;
+      checkoutStarted = false;
+    }
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `login.html?redirect=${returnUrl}`;
+      return;
+    }
+    if (!(await isEmailVerified(user))) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('nav-user-name').textContent =
+      user.displayName || user.email.split('@')[0];
+
+    const { priceId, planId, paymentSuccess } = parseCheckoutParams();
+    if (paymentSuccess) {
+      const plan = getPlanByPriceId(priceId) || getPlanById(planId);
+      showSuccessView(plan);
+      return;
+    }
+
+    if (!priceId || !ALLOWED_STRIPE_PRICE_IDS.has(priceId)) {
+      document.getElementById('loading-state').textContent =
+        'Invalid or missing plan. Go back and try again.';
+      return;
+    }
+
+    await startCheckout(user, { priceId, planId });
+  });
+</script>
+</body>
+</html>

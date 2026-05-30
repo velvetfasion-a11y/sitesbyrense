@@ -1,23 +1,31 @@
-/** Fixed subscription tiers — amounts map to Stripe Payment Links. */
+/** Fixed subscription tiers — map to Stripe Price IDs in stripe-config.js */
+import { STRIPE_PLAN_PRICE_IDS } from './stripe-config.js';
+import { buildCheckoutUrl } from './checkout-nav.js';
+
 export const SUBSCRIPTION_PLANS = [
-  { id: 'basic', label: 'Basic', amount: 699, currency: 'SEK', displayAmount: '699 kr' },
-  { id: 'standard', label: 'Standard', amount: 1200, currency: 'EUR', displayAmount: '€1,200' },
-  { id: 'premium', label: 'Premium', amount: 2499, currency: 'SEK', displayAmount: '2 499 kr' },
+  { id: 'type-a', label: 'Yearly Type A', amount: 699, currency: 'SEK', displayAmount: '699 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-a'] },
+  { id: 'type-b', label: 'Yearly Type B', amount: 799, currency: 'SEK', displayAmount: '799 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-b'] },
+  { id: 'type-i', label: 'Yearly Type I', amount: 1020, currency: 'SEK', displayAmount: '1 020 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-i'] },
+  { id: 'type-ii', label: 'Yearly Type II', amount: 14720, currency: 'SEK', displayAmount: '14 720 kr', stripePriceId: STRIPE_PLAN_PRICE_IDS['type-ii'] },
 ];
 
-/**
- * Stripe Payment Links — one per plan. Replace with your live links from Stripe Dashboard.
- * Use client_reference_id (uid) + prefilled_email in checkout URL for webhook matching.
- */
-export const STRIPE_PAYMENT_LINKS = {
-  basic: 'https://buy.stripe.com/test_PLACEHOLDER_BASIC',
-  standard: 'https://buy.stripe.com/test_PLACEHOLDER_STANDARD',
-  premium: 'https://buy.stripe.com/test_PLACEHOLDER_PREMIUM',
+/** Old plan ids stored in Firestore before Stripe names were synced. */
+const LEGACY_PLAN_ALIASES = {
+  basic: 'type-a',
+  plus: 'type-b',
+  standard: 'type-i',
+  premium: 'type-ii',
 };
 
 export function getPlanById(id) {
   if (!id) return null;
-  return SUBSCRIPTION_PLANS.find((p) => p.id === id) || null;
+  const resolved = LEGACY_PLAN_ALIASES[id] || id;
+  return SUBSCRIPTION_PLANS.find((p) => p.id === resolved) || null;
+}
+
+export function getPlanByPriceId(priceId) {
+  if (!priceId) return null;
+  return SUBSCRIPTION_PLANS.find((p) => p.stripePriceId === priceId) || null;
 }
 
 export function getDisplayAmount(user) {
@@ -53,7 +61,7 @@ export function formatNextBilling(user) {
 
 export function planSelectOptions(selectedId) {
   return SUBSCRIPTION_PLANS.map((p) => {
-    const sel = p.id === selectedId ? ' selected' : '';
+    const sel = p.id === selectedId || LEGACY_PLAN_ALIASES[selectedId] === p.id ? ' selected' : '';
     return `<option value="${p.id}"${sel}>${p.label} — ${p.displayAmount}/yr</option>`;
   }).join('');
 }
@@ -63,13 +71,17 @@ export function getClientSubscriptionState(user) {
   const plan = getPlanById(user?.subscriptionPlan);
   const amountLabel = getDisplayAmount(user);
   const planLabel = plan?.label || (user?.subscriptionPlan ? 'Yearly' : null);
-  const isActive = user?.isClient === true && user?.deleted !== true;
+  const stripeStatus = user?.stripeSubscriptionStatus;
+  const stripeActive = stripeStatus === 'active' || stripeStatus === 'trialing';
+  const isActive = stripeActive || (user?.isClient === true && user?.deleted !== true && !user?.stripePaymentIntentClientSecret);
   const hasAssignedPlan = !!user?.subscriptionPlan || amountLabel != null;
-  const cancelled = user?.subscriptionCancelled === true;
+  const cancelled = user?.subscriptionCancelled === true || stripeStatus === 'canceled';
+  const needsPayment = hasAssignedPlan && !stripeActive && !cancelled;
   const nextBilling = formatNextBilling(user);
 
   return {
     isActive,
+    needsPayment,
     cancelled,
     hasAssignedPlan,
     plan,
@@ -80,21 +92,17 @@ export function getClientSubscriptionState(user) {
     renewLabel: nextBilling !== '—' ? nextBilling : null,
     settingsSub: isActive && !cancelled
       ? `${planLabel || 'Yearly'} · Active`
+      : needsPayment
+      ? `${planLabel || 'Yearly'} · Payment required`
       : hasAssignedPlan
       ? `${planLabel || 'Yearly'} · Pending payment`
       : 'No active plan',
   };
 }
 
-export function getStripeCheckoutUrl(planId, { email, uid } = {}) {
-  const base = STRIPE_PAYMENT_LINKS[planId];
-  if (!base || base.includes('PLACEHOLDER')) return null;
-  try {
-    const url = new URL(base);
-    if (email) url.searchParams.set('prefilled_email', email);
-    if (uid) url.searchParams.set('client_reference_id', uid);
-    return url.toString();
-  } catch {
-    return null;
-  }
+/** Redirect URL to on-site checkout with the assigned plan's Stripe Price ID. */
+export function getStripeCheckoutUrl(planId) {
+  const plan = getPlanById(planId);
+  if (!plan?.stripePriceId) return null;
+  return buildCheckoutUrl(plan.id, plan.stripePriceId);
 }

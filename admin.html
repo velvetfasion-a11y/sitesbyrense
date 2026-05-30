@@ -788,6 +788,7 @@
   import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
   import { SUBSCRIPTION_PLANS, getPlanById } from './js/subscription-plans.js';
+  import { assignStripeSubscription } from './js/stripe-client.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -1615,23 +1616,12 @@
         subscriptionAmount: deleteField(),
         subscriptionCurrency: deleteField(),
         subscriptionRenewAt: deleteField(),
+        stripePaymentIntentClientSecret: deleteField(),
+        stripeSubscriptionStatus: deleteField(),
       });
       return;
     }
-    const plan = getPlanById(planId);
-    if (!plan) return;
-    const payload = {
-      isClient: true,
-      subscriptionPlan: plan.id,
-      subscriptionAmount: plan.amount,
-      subscriptionCurrency: plan.currency,
-    };
-    if (!data.subscriptionRenewAt && !data.renewDate) {
-      const renew = new Date();
-      renew.setFullYear(renew.getFullYear() + 1);
-      payload.subscriptionRenewAt = renew.toISOString();
-    }
-    await updateDoc(ref, payload);
+    await assignStripeSubscription(uid, planId, getPlanById(planId)?.stripePriceId || null);
   };
 
   function showApp() {

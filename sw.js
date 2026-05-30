@@ -1,4 +1,4 @@
-const CACHE = 'rense-v2';
+const CACHE = 'rense-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -27,6 +27,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   const isHtml = event.request.mode === 'navigate' || url.pathname.endsWith('.html');
+  const isJs = url.pathname.endsWith('.js');
 
   if (isHtml) {
     event.respondWith(
@@ -34,6 +35,12 @@ self.addEventListener('fetch', (event) => {
         .then((response) => response)
         .catch(() => caches.match(event.request))
     );
+    return;
+  }
+
+  // Always fetch JS fresh (Stripe keys / checkout logic change often)
+  if (isJs) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
