@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="Rense.se"/>
 <meta name="application-name" content="Rense.se"/>
 <title>My Account — Rense.se</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script src="js/onesignal.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -237,6 +239,102 @@
   .delete-notice { margin: 0 24px 16px; padding: 12px 16px; border: 1px solid rgba(248,113,113,0.35); border-radius: 12px; background: rgba(248,113,113,0.08); color: rgba(248,113,113,0.9); font-size: 13px; line-height: 1.5; }
   .form-msg { font-size: 13px; margin: 8px 24px 0; min-height: 1rem; font-style: italic; color: rgba(255,255,255,0.4); }
 
+  /* Download App + install banner */
+  .download-app-wrap { padding: 22px 24px 0; }
+  .download-status-card {
+    border: 1px solid var(--gold-border); border-radius: 16px; padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  }
+  .download-status-card.installed { border-color: rgba(34,197,94,0.25); }
+  .download-status-icon {
+    width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0;
+    background: rgba(201,168,76,0.08); border: 1px solid var(--gold-border);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .download-status-card.installed .download-status-icon {
+    background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2);
+  }
+  .download-status-title { font-size: 15px; font-weight: 600; }
+  .download-status-card.installed .download-status-title { color: var(--green); }
+  .download-status-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .download-features-label { font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.2); text-transform: uppercase; margin: 0 0 10px; }
+  .download-features { border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden; margin-bottom: 22px; }
+  .download-feature-row {
+    display: flex; align-items: center; gap: 14px; padding: 13px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .download-feature-row:last-child { border-bottom: none; }
+  .download-feature-icon {
+    width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .download-feature-label { font-size: 14px; color: #fff; }
+  .download-feature-sub { font-size: 11px; color: rgba(255,255,255,0.28); margin-top: 1px; }
+  #download-app-cta.muted {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4);
+  }
+
+  #install-banner-root { position: fixed; inset: 0; z-index: 9998; pointer-events: none; }
+  #install-banner-root[aria-hidden="false"] { pointer-events: auto; }
+  .install-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    opacity: 0; transition: opacity 0.3s; z-index: 999;
+  }
+  .install-backdrop.visible { opacity: 1; }
+  .install-sheet {
+    position: fixed; bottom: 0; left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%; max-width: 430px; background: #131313;
+    border-top: 1px solid var(--gold-border); border-radius: 22px 22px 0 0;
+    transition: transform 0.36s cubic-bezier(0.32,0.72,0,1);
+    z-index: 1000; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  .install-sheet.visible { transform: translateX(-50%) translateY(0); }
+  .install-handle { display: flex; justify-content: center; padding: 12px 0 0; }
+  .install-handle::after { content: ''; width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); }
+  .install-close {
+    position: absolute; top: 16px; right: 18; width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.07); border: none; color: rgba(255,255,255,0.4);
+    font-size: 13px; cursor: pointer; font-family: var(--font-ui);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .install-body { padding: 14px 22px 0; color: #fff; }
+  .install-eyebrow { font-size: 10px; letter-spacing: 0.18em; color: rgba(201,168,76,0.5); margin: 0 0 8px; text-transform: uppercase; }
+  .install-title { font-size: 20px; font-weight: 700; margin: 0 0 7px; font-family: var(--font-serif); line-height: 1.25; }
+  .install-lead { font-size: 13px; color: rgba(255,255,255,0.35); margin: 0 0 22px; line-height: 1.55; }
+  .install-features { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+  .install-feature { display: flex; align-items: flex-start; gap: 14px; }
+  .install-feature-icon {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .install-feature-label { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .install-feature-desc { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.45; }
+  .install-primary { width: 100%; margin: 0 0 10px; }
+  .install-secondary {
+    width: 100%; padding: 12px; background: transparent; border: none;
+    color: rgba(255,255,255,0.2); font-size: 13px; cursor: pointer; font-family: var(--font-ui); margin-bottom: 8px;
+  }
+  .install-steps { border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+  .install-step { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+  .install-step.bordered { border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .install-step-num {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(201,168,76,0.09); border: 1px solid var(--gold-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--gold);
+  }
+  .install-step-label { font-size: 14px; font-weight: 600; }
+  .install-step-desc { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 2px; line-height: 1.4; }
+  .install-tip {
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.4;
+  }
+  .install-tip strong { color: rgba(255,255,255,0.55); }
+  .install-tip-icon { font-size: 22px; }
+
   .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #111; border: 1px solid rgba(255,255,255,0.08); padding: 0.8rem 1.3rem; font-size: 0.78rem; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; border-radius: 10px; max-width: 90%; }
   .toast.show { opacity: 1; }
 </style>
@@ -350,6 +448,11 @@
         <button type="button" class="settings-row" onclick="showSub('tos')">
           <div class="settings-row-icon">📄</div>
           <div class="settings-row-label">Terms of Service</div>
+          <span class="settings-chevron">›</span>
+        </button>
+        <button type="button" class="settings-row" onclick="showSub('download-app')">
+          <div class="settings-row-icon">📲</div>
+          <div class="settings-row-label">Download App</div>
           <span class="settings-chevron">›</span>
         </button>
       </div>
@@ -492,6 +595,46 @@
     </div>
   </div>
 
+  <!-- Sub: Download App -->
+  <div class="sub-page" id="sub-download-app">
+    <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
+    <div class="nav-hairline"></div>
+    <button type="button" class="back-btn" onclick="hideSub()">← Back</button>
+    <div class="page-head tight">
+      <p class="eyebrow">Settings</p>
+      <h1 class="headline sm">Download App</h1>
+    </div>
+    <div class="download-app-wrap">
+      <div class="download-status-card" id="download-app-status-card">
+        <div class="download-status-icon" id="download-app-status-icon">📲</div>
+        <div>
+          <div class="download-status-title" id="download-app-status-title">Not yet installed</div>
+          <div class="download-status-sub" id="download-app-status-sub">Add to your phone home screen.</div>
+        </div>
+      </div>
+      <p class="download-features-label">What you get</p>
+      <div class="download-features">
+        <div class="download-feature-row">
+          <div class="download-feature-icon">🔔</div>
+          <div><div class="download-feature-label">Live notifications</div><div class="download-feature-sub">Updates &amp; messages from Rensé</div></div>
+        </div>
+        <div class="download-feature-row">
+          <div class="download-feature-icon">⚡</div>
+          <div><div class="download-feature-label">Full screen</div><div class="download-feature-sub">No browser bar, native feel</div></div>
+        </div>
+        <div class="download-feature-row">
+          <div class="download-feature-icon">📶</div>
+          <div><div class="download-feature-label">Works offline</div><div class="download-feature-sub">Access your portal anytime</div></div>
+        </div>
+        <div class="download-feature-row">
+          <div class="download-feature-icon">🏠</div>
+          <div><div class="download-feature-label">Home screen icon</div><div class="download-feature-sub">One tap to open Rensé</div></div>
+        </div>
+      </div>
+      <button type="button" class="btn-primary" id="download-app-cta">Add to Home Screen</button>
+    </div>
+  </div>
+
   <!-- Sub: Delete -->
   <div class="sub-page" id="sub-delete">
     <div class="nav"><span class="nav-brand">RENSÉ</span><span class="nav-user sub-nav-name"></span></div>
@@ -508,6 +651,7 @@
 
 </div>
 
+<div id="install-banner-root" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -527,6 +671,9 @@
   import {
     getClientSubscriptionState, getStripeCheckoutUrl, getDisplayAmount
   } from './js/subscription-plans.js';
+  import {
+    initInstallApp, maybeShowInstallBannerOnOverview, updateDownloadAppPage
+  } from './js/install-app.js';
 
   let currentUser = null;
   let currentUserData = {};
@@ -680,6 +827,10 @@
       showToast('Payment received — your subscription will activate shortly.');
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    initInstallApp();
+    window.updateDownloadAppPage = updateDownloadAppPage;
+    window.maybeShowInstallBannerOnOverview = maybeShowInstallBannerOnOverview;
   });
 
   let clientLastMessages = [];
@@ -878,12 +1029,18 @@
       window.refreshClientChatBadge();
     }
     window.scrollTo(0, 0);
+    if (name === 'overview' && window.maybeShowInstallBannerOnOverview) {
+      window.maybeShowInstallBannerOnOverview();
+    }
   }
 
   function showSub(name) {
     document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
     document.querySelectorAll('.sub-page').forEach((p) => p.classList.remove('active'));
     document.getElementById('sub-' + name).classList.add('active');
+    if (name === 'download-app' && window.updateDownloadAppPage) {
+      window.updateDownloadAppPage();
+    }
     if (name === 'delete') {
       document.getElementById('delete-confirm-input').value = '';
       document.getElementById('delete-password').value = '';
