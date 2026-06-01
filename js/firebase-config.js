@@ -1,5 +1,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  indexedDBLocalPersistence
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getStorage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 import { getAnalytics, isSupported } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
@@ -17,7 +22,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export { firebaseConfig, app };
-export const auth = getAuth(app);
+
+/** Keep users signed in across browser and home-screen app sessions. */
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  });
+} catch (err) {
+  if (err?.code === 'auth/already-initialized') {
+    auth = getAuth(app);
+  } else {
+    throw err;
+  }
+}
+
+export { auth };
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

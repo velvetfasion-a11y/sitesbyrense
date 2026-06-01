@@ -2,7 +2,7 @@
   "name": "Rense.se",
   "short_name": "Rense.se",
   "description": "Rense.se — custom websites",
-  "start_url": "/",
+  "start_url": "/profile.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

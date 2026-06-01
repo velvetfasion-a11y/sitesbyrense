@@ -166,7 +166,7 @@
   import { auth, db } from './firebase-config.js';
   import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { isAdminUser, ADMIN_EMAILS, sendUserVerificationEmail, isEmailVerified, completeEmailVerificationFromUrl, VERIFICATION_SENDER, savePendingSignup, getPendingSignup, clearPendingSignup, setPendingSignupVerification, isPendingSignupVerification } from './js/auth-helpers.js';
+  import { isAdminUser, ADMIN_EMAILS, sendUserVerificationEmail, isEmailVerified, completeEmailVerificationFromUrl, VERIFICATION_SENDER, savePendingSignup, getPendingSignup, clearPendingSignup, setPendingSignupVerification, isPendingSignupVerification, waitForAuthReady } from './js/auth-helpers.js';
   import { ensureUserProfile } from './js/user-service.js';
 
   document.getElementById('verify-sender').textContent = VERIFICATION_SENDER;
@@ -290,6 +290,7 @@
 
   const authGate = handleVerificationReturnLink();
 
+  await waitForAuthReady();
   onAuthStateChanged(auth, async (user) => {
     await authGate;
     if (verificationRedirecting) return;

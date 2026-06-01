@@ -21,6 +21,39 @@ export function getAuthContinueUrl() {
   return url.href;
 }
 
+export function isStandaloneApp() {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+  );
+}
+
+/** Wait until Firebase restores the saved sign-in from local storage. */
+export function waitForAuthReady() {
+  return auth.authStateReady();
+}
+
+/** Send installed-app users to the right signed-in page (or login). */
+export async function redirectStandaloneToApp() {
+  if (!isStandaloneApp()) return;
+  await waitForAuthReady();
+  const path = window.location.pathname.replace(/\/$/, '');
+  const onAppPage = /\/(profile|admin|login)\.html$/.test(path) || path.endsWith('/profile.html');
+  if (onAppPage) return;
+
+  const user = auth.currentUser;
+  if (!user) {
+    window.location.replace('login.html');
+    return;
+  }
+  if (!(await isEmailVerified(user))) {
+    window.location.replace('login.html?tab=signup');
+    return;
+  }
+  const dest = (await isAdminUser(user)) ? 'admin.html' : 'profile.html';
+  window.location.replace(dest);
+}
+
 export function savePendingSignup({ name, email, phone, password }) {
   sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify({
     name: name || '',

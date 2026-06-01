@@ -661,7 +661,7 @@
     updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser
   } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { isAdminUser, isEmailVerified } from './js/auth-helpers.js';
+  import { isAdminUser, isEmailVerified, waitForAuthReady } from './js/auth-helpers.js';
   import {
     subscribeToMessages, subscribeToConversation, sendChatMessage,
     markConversationRead, renderClientMessages
@@ -791,6 +791,7 @@
     document.getElementById('greeting-name').textContent = 'Welcome, ' + name + '.';
   }
 
+  await waitForAuthReady();
   onAuthStateChanged(auth, async (user) => {
     if (!user) { window.location.href = 'login.html'; return; }
     if (!(await isEmailVerified(user))) { window.location.href = 'login.html'; return; }
