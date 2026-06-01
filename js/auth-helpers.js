@@ -1,5 +1,9 @@
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { sendEmailVerification, applyActionCode } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  sendEmailVerification,
+  applyActionCode,
+  signInWithEmailAndPassword
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { db, auth } from '../firebase-config.js';
 
 /** Emails that automatically get admin access. Add yours here or set role: 'admin' in Firestore. */
@@ -7,8 +11,54 @@ export const ADMIN_EMAILS = ['admin@rense.se'];
 
 export const VERIFICATION_SENDER = 'verification@rense.se';
 
+const PENDING_SIGNUP_KEY = 'rense_pending_signup';
+const PENDING_VERIFY_KEY = 'pendingSignupVerification';
+const PENDING_SIGNUP_TTL_MS = 24 * 60 * 60 * 1000;
+
 export function getAuthContinueUrl() {
-  return new URL('login.html', window.location.href).href;
+  const url = new URL('login.html', window.location.href);
+  url.searchParams.set('tab', 'signup');
+  return url.href;
+}
+
+export function savePendingSignup({ name, email, phone, password }) {
+  sessionStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify({
+    name: name || '',
+    email: email || '',
+    phone: phone || '',
+    password: password || '',
+    savedAt: Date.now(),
+  }));
+  setPendingSignupVerification(true);
+}
+
+export function getPendingSignup() {
+  try {
+    const raw = sessionStorage.getItem(PENDING_SIGNUP_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - (data.savedAt || 0) > PENDING_SIGNUP_TTL_MS) {
+      clearPendingSignup();
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingSignup() {
+  sessionStorage.removeItem(PENDING_SIGNUP_KEY);
+  sessionStorage.removeItem(PENDING_VERIFY_KEY);
+}
+
+export function setPendingSignupVerification(on) {
+  if (on) sessionStorage.setItem(PENDING_VERIFY_KEY, 'true');
+  else sessionStorage.removeItem(PENDING_VERIFY_KEY);
+}
+
+export function isPendingSignupVerification() {
+  return sessionStorage.getItem(PENDING_VERIFY_KEY) === 'true';
 }
 
 export async function reloadCurrentUser() {
@@ -20,18 +70,26 @@ export async function reloadCurrentUser() {
 export async function sendUserVerificationEmail(user) {
   const settings = {
     url: getAuthContinueUrl(),
-    handleCodeInApp: false
+    handleCodeInApp: true,
   };
 
   try {
     await sendEmailVerification(user, settings);
   } catch (err) {
     if (err.code === 'auth/invalid-continue-uri' || err.code === 'auth/unauthorized-continue-uri') {
-      await sendEmailVerification(user);
+      await sendEmailVerification(user, { handleCodeInApp: true });
       return;
     }
     throw err;
   }
+}
+
+async function signInPendingUserAfterVerification() {
+  const pending = getPendingSignup();
+  if (!pending?.email || !pending?.password) return null;
+  const cred = await signInWithEmailAndPassword(auth, pending.email, pending.password);
+  await cred.user.reload();
+  return auth.currentUser;
 }
 
 export async function completeEmailVerificationFromUrl() {
@@ -41,8 +99,19 @@ export async function completeEmailVerificationFromUrl() {
   if (mode !== 'verifyEmail' || !oobCode) return null;
 
   await applyActionCode(auth, oobCode);
-  window.history.replaceState({}, '', window.location.pathname);
-  return reloadCurrentUser();
+  window.history.replaceState({}, '', `${window.location.pathname}?tab=signup`);
+
+  let user = auth.currentUser;
+  if (user) {
+    await user.reload();
+    user = auth.currentUser;
+  }
+
+  if (!user?.emailVerified) {
+    user = await signInPendingUserAfterVerification();
+  }
+
+  return user;
 }
 
 export async function isEmailVerified(user) {

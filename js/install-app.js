@@ -18,12 +18,6 @@ export function shouldAutoShowInstallBanner() {
   return isMobilePhone() && !isAppInstalled();
 }
 
-const FEATURES = [
-  { icon: '🔔', label: 'Live notifications', desc: 'Get notified instantly when Rensé sends an update or message.' },
-  { icon: '⚡', label: 'Full screen', desc: 'Opens like a native app — no browser bar.' },
-  { icon: '📶', label: 'Works offline', desc: 'Access your portal even without an internet connection.' },
-];
-
 const IOS_STEPS = [
   { num: '1', label: 'Tap the Share button', desc: 'The ⬆ box-with-arrow icon at the bottom of Safari.' },
   { num: '2', label: 'Tap "Add to Home Screen"', desc: 'Scroll down in the share sheet to find it.' },
@@ -35,6 +29,8 @@ const ANDROID_STEPS = [
   { num: '2', label: '"Add to Home screen"', desc: 'Find it in the dropdown menu.' },
   { num: '3', label: 'Tap Add', desc: 'Rensé will appear on your home screen.' },
 ];
+
+const INSTALL_TITLE = 'add rense.se to homescreen';
 
 function isAndroid() {
   return /Android/i.test(navigator.userAgent);
@@ -104,7 +100,6 @@ export function showInstallBanner({ forceShow = false, onDismiss } = {}) {
     return;
   }
 
-  let step = 0;
   let visible = false;
   let closed = false;
   const steps = isAndroid() ? ANDROID_STEPS : IOS_STEPS;
@@ -117,8 +112,6 @@ export function showInstallBanner({ forceShow = false, onDismiss } = {}) {
     }
 
     root.setAttribute('aria-hidden', 'false');
-    const intro = step === 0;
-    const showStandaloneDone = installed && forceShow;
 
     root.innerHTML = `
       <div class="install-backdrop${visible ? ' visible' : ''}" data-install-close="visit"></div>
@@ -126,50 +119,25 @@ export function showInstallBanner({ forceShow = false, onDismiss } = {}) {
         <div class="install-handle"></div>
         <button type="button" class="install-close" data-install-close="temp" aria-label="Close">✕</button>
         <div class="install-body">
-          ${intro ? `
-            <p class="install-eyebrow">${installed ? 'Already installed' : 'Better on your home screen'}</p>
-            <h2 id="install-sheet-title" class="install-title">Add Rensé to your<br/>home screen</h2>
-            <p class="install-lead">Get the full app experience — notifications, full screen, and instant access from your home screen.</p>
-            <div class="install-features">
-              ${FEATURES.map((f) => `
-                <div class="install-feature">
-                  <div class="install-feature-icon">${f.icon}</div>
-                  <div>
-                    <div class="install-feature-label">${esc(f.label)}</div>
-                    <div class="install-feature-desc">${esc(f.desc)}</div>
-                  </div>
+          <h2 id="install-sheet-title" class="install-title">${INSTALL_TITLE}</h2>
+          <div class="install-steps">
+            ${steps.map((s, i) => `
+              <div class="install-step${i < steps.length - 1 ? ' bordered' : ''}">
+                <div class="install-step-num">${s.num}</div>
+                <div>
+                  <div class="install-step-label">${esc(s.label)}</div>
+                  <div class="install-step-desc">${esc(s.desc)}</div>
                 </div>
-              `).join('')}
-            </div>
-            ${showStandaloneDone ? `
-              <button type="button" class="btn-primary install-primary" data-install-close="temp">Done</button>
-            ` : installed ? `
-              <button type="button" class="btn-primary install-primary" data-install-close="temp">Done</button>
-            ` : `
-              <button type="button" class="btn-primary install-primary" data-install-step="1">Show me how</button>
-              <button type="button" class="install-secondary" data-install-close="visit">Not now</button>
-            `}
-          ` : `
-            <p class="install-eyebrow">${isAndroid() ? 'Chrome · Android' : 'Safari · iPhone'}</p>
-            <div class="install-steps">
-              ${steps.map((s, i) => `
-                <div class="install-step${i < steps.length - 1 ? ' bordered' : ''}">
-                  <div class="install-step-num">${s.num}</div>
-                  <div>
-                    <div class="install-step-label">${esc(s.label)}</div>
-                    <div class="install-step-desc">${esc(s.desc)}</div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            ${!isAndroid() ? `
-              <div class="install-tip">
-                <span class="install-tip-icon">⬆️</span>
-                <span>The <strong>Share</strong> button is at the bottom centre of your Safari browser.</span>
               </div>
-            ` : ''}
-            <button type="button" class="btn-primary install-primary" data-install-close="${forceShow ? 'temp' : 'visit'}">Got it</button>
-          `}
+            `).join('')}
+          </div>
+          ${!isAndroid() ? `
+            <div class="install-tip">
+              <span class="install-tip-icon">⬆️</span>
+              <span>The <strong>Share</strong> button is at the bottom centre of your Safari browser.</span>
+            </div>
+          ` : ''}
+          <button type="button" class="btn-primary install-primary" data-install-close="${forceShow ? 'temp' : 'visit'}">Got it</button>
         </div>
       </div>
     `;
@@ -179,10 +147,6 @@ export function showInstallBanner({ forceShow = false, onDismiss } = {}) {
         const mode = btn.getAttribute('data-install-close');
         close(mode === 'visit' && !forceShow);
       });
-    });
-    root.querySelector('[data-install-step="1"]')?.addEventListener('click', () => {
-      step = 1;
-      render();
     });
     root.querySelector('.install-backdrop')?.addEventListener('click', () => close(false));
   }

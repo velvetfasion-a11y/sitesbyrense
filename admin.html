@@ -261,6 +261,11 @@
     border-radius: 12px; padding: 13px 16px;
     display: flex; align-items: center; gap: 12px;
     cursor: pointer; text-align: left; font-family: var(--font-ui); width: 100%; color: inherit;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .progress-step.done {
+    border-color: rgba(34,197,94,0.35);
+    background: rgba(34,197,94,0.06);
   }
   .progress-step-icon {
     width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
@@ -271,7 +276,7 @@
   .progress-step-icon.done { background: var(--green); border-color: var(--green); color: #fff; font-size: 11px; font-weight: 800; }
   .progress-step-label { font-size: 15px; color: rgba(255,255,255,0.3); font-weight: 400; flex: 1; transition: color 0.2s; }
   .progress-step-label.done { color: #fff; font-weight: 500; }
-  .progress-step-tag { font-size: 10px; color: rgba(255,255,255,0.2); font-weight: 600; letter-spacing: 0.08em; }
+  .progress-step-tag { font-size: 10px; color: rgba(34,197,94,0.65); font-weight: 600; letter-spacing: 0.08em; }
 
   .publish-card {
     background: transparent; border-radius: 16px;
@@ -1049,22 +1054,33 @@
     if (pctEl) pctEl.textContent = pct + '%';
 
     const stepsEl = document.getElementById('prof-ws-steps');
-    if (stepsEl && stepsEl.dataset.stage !== String(stage)) {
-      stepsEl.dataset.stage = String(stage);
-      renderWebsiteSteps(stepsEl, stage, {
-        variant: 'admin',
-        onSelect: async (idx) => {
-          if (isDeletedUser(data) || !isClient) return;
-          stepsEl.dataset.stage = String(idx);
-          try {
-            await updateDoc(doc(db, 'users', uid), { websiteStage: idx });
-            if (window.showToast) window.showToast(`Stage set to "${WEBSITE_STAGES[idx]}" ✓`);
-          } catch (err) {
-            console.error(err);
-            if (window.showToast) window.showToast('Could not update stage.');
-          }
+    if (stepsEl) {
+      function paintProgressSteps(currentStage) {
+        renderWebsiteSteps(stepsEl, currentStage, {
+          variant: 'admin',
+          onSelect: handleStageSelect,
+        });
+      }
+      async function handleStageSelect(idx) {
+        if (isDeletedUser(data) || !isClient) return;
+        const prevStage = Number.isInteger(data.websiteStage) ? data.websiteStage : -1;
+        paintProgressSteps(idx);
+        const nextPct = getStageProgressPercent(idx);
+        if (fill) fill.style.width = nextPct + '%';
+        if (pctEl) pctEl.textContent = nextPct + '%';
+        try {
+          await updateDoc(doc(db, 'users', uid), { websiteStage: idx });
+          if (window.showToast) window.showToast(`Stage set to "${WEBSITE_STAGES[idx]}" ✓`);
+        } catch (err) {
+          console.error(err);
+          paintProgressSteps(prevStage);
+          const revertPct = getStageProgressPercent(prevStage);
+          if (fill) fill.style.width = revertPct + '%';
+          if (pctEl) pctEl.textContent = revertPct + '%';
+          if (window.showToast) window.showToast('Could not update stage.');
         }
-      });
+      }
+      paintProgressSteps(stage);
     }
 
     const conv = conversationsMap.get(uid);

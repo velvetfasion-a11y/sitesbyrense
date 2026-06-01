@@ -43,7 +43,7 @@ function renderAdminWebsiteSteps(container, stageIndex, { onSelect } = {}) {
   const idx = Number.isInteger(stageIndex) ? stageIndex : -1;
   container.innerHTML = WEBSITE_STAGES.map((label, i) => {
     const done = idx >= 0 && i <= idx;
-    return `<button type="button" class="progress-step" data-stage="${i}">
+    return `<button type="button" class="progress-step${done ? ' done' : ''}" data-stage="${i}">
       <div class="progress-step-icon${done ? ' done' : ''}">${done ? '✓' : i + 1}</div>
       <span class="progress-step-label${done ? ' done' : ''}">${label}</span>
       ${done ? '<span class="progress-step-tag">DONE</span>' : ''}
