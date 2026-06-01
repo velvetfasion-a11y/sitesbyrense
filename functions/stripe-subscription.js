@@ -85,6 +85,69 @@ async function findUserByStripeRefs(db, { customerId, subscriptionId }) {
   return null;
 }
 
+async function findBestSubscriptionForUser(stripe, user) {
+  const expand = { expand: ['latest_invoice.payment_intent'] };
+
+  if (user.stripeSubscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(String(user.stripeSubscriptionId), expand);
+      if (sub.status === 'active' || sub.status === 'trialing') return sub;
+    } catch (_) {
+      /* stored id may be stale */
+    }
+  }
+
+  const customerIds = [];
+  if (user.stripeCustomerId) customerIds.push(user.stripeCustomerId);
+  if (user.email) {
+    const customers = await stripe.customers.list({ email: user.email, limit: 5 });
+    for (const c of customers.data) {
+      if (!customerIds.includes(c.id)) customerIds.push(c.id);
+    }
+  }
+
+  for (const customerId of customerIds) {
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
+    const active = subs.data.find((s) => s.status === 'active' || s.status === 'trialing');
+    if (active) {
+      return stripe.subscriptions.retrieve(active.id, expand);
+    }
+  }
+
+  if (user.stripeSubscriptionId) {
+    return stripe.subscriptions.retrieve(String(user.stripeSubscriptionId), expand);
+  }
+  return null;
+}
+
+async function applySubscriptionSync(userRef, user, subscription) {
+  let sub = subscription;
+  if (sub.status !== 'active' && sub.status !== 'trialing') {
+    const invoice = sub.latest_invoice;
+    const paymentIntent = invoice && typeof invoice === 'object' ? invoice.payment_intent : null;
+    if (
+      paymentIntent
+      && typeof paymentIntent === 'object'
+      && ['succeeded', 'processing', 'requires_capture'].includes(paymentIntent.status)
+    ) {
+      sub = { ...sub, status: 'active' };
+    }
+  }
+
+  const planId = sub.metadata?.planId || user.subscriptionPlan;
+  const plan = getPlanById(planId)
+    || getPlanByPriceId(sub.metadata?.priceId || user.stripePriceId);
+
+  await syncSubscriptionToUser(userRef, sub, {
+    planId: plan?.id || planId,
+    amount: plan?.amount ?? user.subscriptionAmount,
+    currency: plan?.currency ?? user.subscriptionCurrency,
+  });
+
+  const paid = sub.status === 'active' || sub.status === 'trialing';
+  return { status: sub.status, paid, subscriptionId: sub.id };
+}
+
 async function syncSubscriptionToUser(userRef, subscription, planMeta = {}) {
   const periodEnd = subscription.current_period_end
     ? new Date(subscription.current_period_end * 1000).toISOString()
@@ -283,40 +346,13 @@ async function confirmSubscriptionForUser(db, uid) {
   if (!userSnap.exists) throw new HttpsError('not-found', 'User not found');
 
   const user = userSnap.data();
-  const subscriptionId = user.stripeSubscriptionId;
-  if (!subscriptionId) {
+  const stripe = getStripe();
+  const subscription = await findBestSubscriptionForUser(stripe, user);
+  if (!subscription) {
     throw new HttpsError('failed-precondition', 'No subscription to confirm');
   }
 
-  const stripe = getStripe();
-  let subscription = await stripe.subscriptions.retrieve(String(subscriptionId), {
-    expand: ['latest_invoice.payment_intent'],
-  });
-
-  if (subscription.status !== 'active' && subscription.status !== 'trialing') {
-    const invoice = subscription.latest_invoice;
-    const paymentIntent = invoice && typeof invoice === 'object' ? invoice.payment_intent : null;
-    if (
-      paymentIntent
-      && typeof paymentIntent === 'object'
-      && ['succeeded', 'processing', 'requires_capture'].includes(paymentIntent.status)
-    ) {
-      subscription = { ...subscription, status: 'active' };
-    }
-  }
-
-  const planId = subscription.metadata?.planId || user.subscriptionPlan;
-  const plan = getPlanById(planId)
-    || getPlanByPriceId(subscription.metadata?.priceId || user.stripePriceId);
-
-  await syncSubscriptionToUser(userRef, subscription, {
-    planId: plan?.id || planId,
-    amount: plan?.amount ?? user.subscriptionAmount,
-    currency: plan?.currency ?? user.subscriptionCurrency,
-  });
-
-  const paid = subscription.status === 'active' || subscription.status === 'trialing';
-  return { status: subscription.status, paid };
+  return applySubscriptionSync(userRef, user, subscription);
 }
 
 function createConfirmSubscriptionPayment(db) {
@@ -328,6 +364,25 @@ function createConfirmSubscriptionPayment(db) {
         return await confirmSubscriptionForUser(db, request.auth.uid);
       } catch (error) {
         handleCallableError('confirmSubscriptionPayment', error);
+      }
+    }
+  );
+}
+
+function createSyncUserSubscriptionFromStripe(db) {
+  return onCall(
+    { region: REGION, cors: CALLABLE_CORS, invoker: 'public' },
+    async (request) => {
+      try {
+        if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+        await assertAdmin(db, request.auth.uid, request.auth.token.email || '');
+
+        const { uid } = request.data || {};
+        if (!uid) throw new HttpsError('invalid-argument', 'uid is required');
+
+        return await confirmSubscriptionForUser(db, uid);
+      } catch (error) {
+        handleCallableError('syncUserSubscriptionFromStripe', error);
       }
     }
   );
@@ -436,5 +491,6 @@ module.exports = {
   createAssignStripeSubscription,
   createCreateSubscription,
   createConfirmSubscriptionPayment,
+  createSyncUserSubscriptionFromStripe,
   createStripeWebhook,
 };

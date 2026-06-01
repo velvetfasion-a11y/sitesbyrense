@@ -800,6 +800,8 @@
   import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
   import { SUBSCRIPTION_PLANS, getPlanById, getClientSubscriptionState, getAccountProfileStatus, getAccountProfileBadge } from './js/subscription-plans.js';
+  import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
+  import { functions, functionsReady } from './js/firebase-functions.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -1660,6 +1662,35 @@
   window.getAccountProfileBadge = getAccountProfileBadge;
   window.adminGetUser = (uid) => usersMap.get(uid) || null;
 
+  let stripeUnpaidSyncBusy = false;
+  window.syncUnpaidStripeUsers = async (users) => {
+    if (stripeUnpaidSyncBusy || !users?.length) return false;
+    const unpaid = users.filter((u) => {
+      if (getAccountProfileStatus(u) !== 'unpaid') return false;
+      return !!(u.stripeCustomerId || u.stripeSubscriptionId || u.email);
+    });
+    if (!unpaid.length) return false;
+
+    stripeUnpaidSyncBusy = true;
+    let changed = false;
+    try {
+      await functionsReady;
+      const callable = httpsCallable(functions, 'syncUserSubscriptionFromStripe');
+      for (const u of unpaid) {
+        try {
+          const { data } = await callable({ uid: u.id });
+          if (data?.paid) changed = true;
+        } catch (err) {
+          console.warn('Stripe sync skipped for', u.id, err?.message || err);
+        }
+      }
+    } finally {
+      stripeUnpaidSyncBusy = false;
+    }
+    if (changed) scheduleAdminRefresh();
+    return changed;
+  };
+
   window.updateUserSubscription = async function updateUserSubscription(uid, planId) {
     if (!uid) return;
     const ref = doc(db, 'users', uid);
@@ -2169,6 +2200,7 @@
 
         bindSubscriptionSelects(subPanel);
         if (window.bindProfileLinks) window.bindProfileLinks(subPanel);
+        if (window.syncUnpaidStripeUsers) window.syncUnpaidStripeUsers(users);
       }
 
       if (activeTab === 'automated') {

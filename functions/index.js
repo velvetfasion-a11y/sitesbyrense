@@ -8,6 +8,7 @@ const {
   createAssignStripeSubscription,
   createCreateSubscription,
   createConfirmSubscriptionPayment,
+  createSyncUserSubscriptionFromStripe,
   createStripeWebhook,
 } = require('./stripe-subscription');
 
@@ -17,4 +18,5 @@ const db = getFirestore();
 exports.assignStripeSubscription = createAssignStripeSubscription(db);
 exports.createSubscription = createCreateSubscription(db);
 exports.confirmSubscriptionPayment = createConfirmSubscriptionPayment(db);
+exports.syncUserSubscriptionFromStripe = createSyncUserSubscriptionFromStripe(db);
 exports.stripeWebhook = createStripeWebhook(db);
