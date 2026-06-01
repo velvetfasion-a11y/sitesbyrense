@@ -794,7 +794,7 @@
   } from './js/chat-service.js';
   import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
-  import { SUBSCRIPTION_PLANS, getPlanById } from './js/subscription-plans.js';
+  import { SUBSCRIPTION_PLANS, getPlanById, getClientSubscriptionState } from './js/subscription-plans.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -1904,20 +1904,22 @@
 
   function renderSubscriptionCard(u) {
     const deleted = window.isDeletedUser ? window.isDeletedUser(u) : (u.deleted === true || !!u.deletedAt);
-    const isActive = u.isClient === true && !deleted;
+    const isClient = u.isClient === true && !deleted;
+    const sub = getClientSubscriptionState(u);
     const since = formatJoinedLocal(u.createdAt);
     const plan = window.getSubscriptionPlanById ? window.getSubscriptionPlanById(u.subscriptionPlan) : null;
-    const amountLabel = isActive && plan ? plan.displayAmount : '—';
-    const nextBilling = isActive ? formatNextBillingLocal(u) : null;
+    const amountLabel = isClient && plan ? plan.displayAmount : '—';
+    const nextBilling = sub.isActive ? formatNextBillingLocal(u) : null;
+    const payLabel = sub.isActive ? 'Subscribed' : sub.needsPayment ? 'Awaiting payment' : '—';
     const planOptions = (window.SUBSCRIPTION_PLANS || []).map((p) => {
       const sel = u.subscriptionPlan === p.id ? ' selected' : '';
       return `<option value="${p.id}"${sel}>${esc(p.label)} — ${esc(p.displayAmount)}/yr</option>`;
     }).join('');
     const currentPlan = u.subscriptionPlan || '';
-    const statusLabel = deleted ? 'deleted' : isActive ? 'active' : 'registered';
-    const statusClass = deleted ? ' deleted' : isActive ? '' : ' registered';
+    const statusLabel = deleted ? 'deleted' : isClient ? 'active' : 'registered';
+    const statusClass = deleted ? ' deleted' : isClient ? '' : ' registered';
 
-    return `<div class="sub-card${isActive ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
+    return `<div class="sub-card${isClient ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
       <div class="sub-card-header">
         <div class="user-avatar" style="width:42px;height:42px;border-radius:13px;">${esc(getInitialsLocal(u.name || 'User'))}</div>
         <div style="flex:1;min-width:0;">
@@ -1928,16 +1930,20 @@
       </div>
       <div class="sub-row">
         <span class="sub-row-label">Plan</span>
-        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${deleted ? '1' : '0'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isActive ? '' : ' disabled'}>
+        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${deleted ? '1' : '0'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isClient ? '' : ' disabled'}>
           <option value=""${!currentPlan ? ' selected' : ''}>No subscription</option>
           ${planOptions}
         </select>
       </div>
       <div class="sub-row">
-        <span class="sub-row-label">Amount per year</span>
-        <span class="sub-row-value${isActive ? '' : ' muted'}">${esc(amountLabel)}</span>
+        <span class="sub-row-label">Payment</span>
+        <span class="sub-row-value${sub.isActive ? '' : ' muted'}">${esc(payLabel)}</span>
       </div>
-      ${isActive ? `<div class="sub-row"><span class="sub-row-label">Next billing</span><span class="sub-row-value">${esc(nextBilling)}</span></div>` : ''}
+      <div class="sub-row">
+        <span class="sub-row-label">Amount per year</span>
+        <span class="sub-row-value${isClient ? '' : ' muted'}">${esc(amountLabel)}</span>
+      </div>
+      ${sub.isActive ? `<div class="sub-row"><span class="sub-row-label">Next billing</span><span class="sub-row-value">${esc(nextBilling)}</span></div>` : ''}
       <div class="sub-row">
         <span class="sub-row-label">Member since</span>
         <span class="sub-row-value">${esc(since)}</span>

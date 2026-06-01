@@ -42,11 +42,16 @@ export function getDisplayAmount(user) {
   return null;
 }
 
+export function isStripeSubscriptionPaid(user) {
+  const status = user?.stripeSubscriptionStatus;
+  return status === 'active' || status === 'trialing';
+}
+
 export function getPlanLabels(user) {
-  const active = user?.isClient === true && user?.deleted !== true;
   const plan = getPlanById(user?.subscriptionPlan);
   const amountLabel = getDisplayAmount(user) || '—';
-  if (!active || !user?.subscriptionPlan) {
+  const paid = isStripeSubscriptionPaid(user);
+  if (!paid || !user?.subscriptionPlan) {
     return { planLabel: plan?.label || '—', amountLabel, active: false, plan };
   }
   return { planLabel: plan?.label || 'Yearly', amountLabel, active: true, plan };
@@ -67,17 +72,16 @@ export function planSelectOptions(selectedId) {
   }).join('');
 }
 
-/** Client-facing subscription state derived from admin-assigned Firestore fields. */
+/** Client-facing subscription state — paid only when Stripe subscription is active. */
 export function getClientSubscriptionState(user) {
   const plan = getPlanById(user?.subscriptionPlan);
   const amountLabel = getDisplayAmount(user);
   const planLabel = plan?.label || (user?.subscriptionPlan ? 'Yearly' : null);
   const stripeStatus = user?.stripeSubscriptionStatus;
-  const stripeActive = stripeStatus === 'active' || stripeStatus === 'trialing';
-  const isActive = stripeActive || (user?.isClient === true && user?.deleted !== true && !user?.stripePaymentIntentClientSecret);
+  const isActive = isStripeSubscriptionPaid(user);
   const hasAssignedPlan = !!user?.subscriptionPlan || amountLabel != null;
   const cancelled = user?.subscriptionCancelled === true || stripeStatus === 'canceled';
-  const needsPayment = hasAssignedPlan && !stripeActive && !cancelled;
+  const needsPayment = hasAssignedPlan && !isActive && !cancelled;
   const nextBilling = formatNextBilling(user);
 
   return {
@@ -92,11 +96,11 @@ export function getClientSubscriptionState(user) {
     nextBilling,
     renewLabel: nextBilling !== '—' ? nextBilling : null,
     settingsSub: isActive && !cancelled
-      ? `${planLabel || 'Yearly'} · Active`
+      ? `${planLabel || 'Yearly'} · Subscribed`
       : needsPayment
       ? `${planLabel || 'Yearly'} · Payment required`
-      : hasAssignedPlan
-      ? `${planLabel || 'Yearly'} · Pending payment`
+      : cancelled && hasAssignedPlan
+      ? `${planLabel || 'Yearly'} · Cancelled`
       : 'No active plan',
   };
 }

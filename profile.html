@@ -214,6 +214,7 @@
     border-radius: 4px; padding: 3px 8px;
   }
   .status-pill.active { color: var(--green); border: 1px solid var(--green); }
+  .status-pill.inactive { color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.12); }
   .status-pill.cancelled { color: rgba(255,80,80,0.7); border: 1px solid rgba(255,80,80,0.3); }
 
   .checkout-summary { margin: 20px 24px 0; border: 1px solid var(--gold-border); border-radius: 14px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
@@ -717,8 +718,8 @@
     document.getElementById('active-amount').textContent = sub.amountPerYear;
     document.getElementById('active-renew').textContent = sub.cancelled ? '—' : sub.nextBilling;
     const statusEl = document.getElementById('active-status');
-    statusEl.textContent = sub.cancelled ? 'Cancelled' : 'Active';
-    statusEl.className = 'status-pill ' + (sub.cancelled ? 'cancelled' : 'active');
+    statusEl.textContent = sub.cancelled ? 'Cancelled' : sub.isActive ? 'Subscribed' : 'Inactive';
+    statusEl.className = 'status-pill ' + (sub.cancelled ? 'cancelled' : sub.isActive ? 'active' : 'inactive');
     document.getElementById('active-billing-card').classList.toggle('inactive', sub.cancelled);
 
     const cancelSection = document.getElementById('cancel-section');
