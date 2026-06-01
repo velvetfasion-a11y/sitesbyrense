@@ -47,6 +47,25 @@ export function isStripeSubscriptionPaid(user) {
   return status === 'active' || status === 'trialing';
 }
 
+/** Admin profile status: registered → unpaid (client, not paid) → client (paid) | deleted */
+export function getAccountProfileStatus(user) {
+  if (!user) return 'registered';
+  if (user.deleted === true || user.deletedAt) return 'deleted';
+  if (user.isClient !== true) return 'registered';
+  if (isStripeSubscriptionPaid(user)) return 'client';
+  return 'unpaid';
+}
+
+export function getAccountProfileBadge(status) {
+  const badges = {
+    deleted: { text: 'Deleted', cls: 'deleted', profileLabel: '○ Deleted' },
+    registered: { text: 'Registered', cls: 'registered', profileLabel: '○ Registered' },
+    unpaid: { text: 'Unpaid', cls: 'unpaid', profileLabel: '● Unpaid' },
+    client: { text: 'Client', cls: 'client', profileLabel: '● Client' },
+  };
+  return badges[status] || badges.registered;
+}
+
 export function getPlanLabels(user) {
   const plan = getPlanById(user?.subscriptionPlan);
   const amountLabel = getDisplayAmount(user) || '—';

@@ -131,6 +131,7 @@
     background: transparent; border-radius: 4px; padding: 2px 6px;
   }
   .user-badge.client { color: var(--green); border: 1px solid var(--green); }
+  .user-badge.unpaid { color: var(--gold); border: 1px solid var(--gold-border); }
   .user-badge.registered { color: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.12); }
   .user-badge.deleted { color: #f87171; border: 1px solid rgba(248,113,113,0.55); }
   .user-card.is-deleted { opacity: 0.55; }
@@ -185,6 +186,7 @@
     color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.12);
   }
   .status-badge.client { color: var(--green); border-color: var(--green); }
+  .status-badge.unpaid { color: var(--gold); border-color: var(--gold-border); }
   .status-badge.inactive { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.15); }
   .status-badge.registered { color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.15); }
   .status-badge.deleted { color: #f87171; border-color: rgba(248,113,113,0.55); }
@@ -486,6 +488,9 @@
   .sub-status.registered {
     border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35);
   }
+  .sub-status.unpaid { border-color: var(--gold-border); color: var(--gold); }
+  .sub-status.deleted { border-color: rgba(248,113,113,0.55); color: #f87171; }
+  .sub-status.client { border-color: var(--green); color: var(--green); }
   .sub-card.inactive { border-color: rgba(255,255,255,0.08); }
   .sub-plan-select {
     background: #111; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
@@ -794,7 +799,7 @@
   } from './js/chat-service.js';
   import { renderWebsiteSteps, WEBSITE_STAGES, getStageProgressPercent } from './js/website-stages.js';
   import { deleteConversationData, deleteUserData } from './js/user-service.js';
-  import { SUBSCRIPTION_PLANS, getPlanById, getClientSubscriptionState } from './js/subscription-plans.js';
+  import { SUBSCRIPTION_PLANS, getPlanById, getClientSubscriptionState, getAccountProfileStatus, getAccountProfileBadge } from './js/subscription-plans.js';
 
   let activeClientUid = null;
   let activeProfileUid = null;
@@ -839,10 +844,17 @@
     return data.isClient === true;
   }
 
+  function isPaidClientUser(data) {
+    if (!isClientUser(data)) return false;
+    return getAccountProfileStatus(data) === 'client';
+  }
+
+  function isUnpaidClientUser(data) {
+    return getAccountProfileStatus(data) === 'unpaid';
+  }
+
   function getUserStatusBadge(u) {
-    if (isDeletedUser(u)) return { text: 'Deleted', cls: 'deleted' };
-    if (u.isClient === true) return { text: 'Client', cls: 'client' };
-    return { text: 'Registered', cls: 'registered' };
+    return getAccountProfileBadge(getAccountProfileStatus(u));
   }
 
   function formatJoined(iso) {
@@ -892,9 +904,15 @@
     if (tog) tog.disabled = !!window._clientTogglePending;
     const badge = document.getElementById('prof-status-badge');
     if (badge) {
-      badge.textContent = isClient ? '● Client' : '○ Registered';
-      badge.classList.toggle('client', isClient);
-      badge.classList.toggle('registered', !isClient);
+      const uid = activeProfileUid;
+      const data = uid ? usersMap.get(uid) || {} : {};
+      const profileStatus = getAccountProfileStatus({ ...data, id: uid });
+      const badgeInfo = getAccountProfileBadge(profileStatus);
+      badge.textContent = badgeInfo.profileLabel;
+      badge.classList.toggle('client', profileStatus === 'client');
+      badge.classList.toggle('unpaid', profileStatus === 'unpaid');
+      badge.classList.toggle('registered', profileStatus === 'registered');
+      badge.classList.toggle('deleted', profileStatus === 'deleted');
       badge.classList.toggle('inactive', false);
     }
   }
@@ -994,11 +1012,14 @@
 
     const badge = document.getElementById('prof-status-badge');
     if (badge) {
-      badge.textContent = terminated ? '○ Deleted' : isClient ? '● Client' : '○ Registered';
-      badge.classList.toggle('client', isClient && !terminated);
-      badge.classList.toggle('registered', !isClient && !terminated);
+      const profileStatus = getAccountProfileStatus({ ...data, id: uid });
+      const badgeInfo = getAccountProfileBadge(profileStatus);
+      badge.textContent = badgeInfo.profileLabel;
+      badge.classList.toggle('client', profileStatus === 'client');
+      badge.classList.toggle('unpaid', profileStatus === 'unpaid');
+      badge.classList.toggle('registered', profileStatus === 'registered');
+      badge.classList.toggle('deleted', profileStatus === 'deleted');
       badge.classList.toggle('inactive', false);
-      badge.classList.toggle('deleted', terminated);
     }
 
     const clientToggle = document.getElementById('client-toggle');
@@ -1182,23 +1203,23 @@
     await updateDoc(doc(db, 'users', uid), { websiteUrl: trimmed || null });
   }
 
-  function updateDashboardTiles(clients, accounts, totalUnread) {
+  function updateDashboardTiles(paidClients, accounts, totalUnread, billingClients) {
     const clientTile = document.getElementById('tile-clients');
     const accountTile = document.getElementById('tile-accounts');
     const chatTile = document.getElementById('tile-chat');
     const invoiceTile = document.getElementById('tile-invoices');
 
-    document.getElementById('ov-clients').textContent = String(clients.length);
+    document.getElementById('ov-clients').textContent = String(paidClients.length);
     document.getElementById('ov-accounts').textContent = String(accounts.length);
     const ovInv = document.getElementById('ov-invoices');
-    if (ovInv) ovInv.textContent = String(clients.length);
+    if (ovInv) ovInv.textContent = String(billingClients.length);
     const ovChats = document.getElementById('ov-chats');
     ovChats.textContent = String(totalUnread);
 
-    clientTile?.classList.toggle('active', clients.length > 0);
+    clientTile?.classList.toggle('active', paidClients.length > 0);
     accountTile?.classList.toggle('active', accounts.length > 0);
     chatTile?.classList.toggle('active', totalUnread > 0);
-    invoiceTile?.classList.toggle('active', clients.length > 0);
+    invoiceTile?.classList.toggle('active', billingClients.length > 0);
   }
 
   function getTotalUnread() {
@@ -1213,9 +1234,10 @@
   function renderUserCard(u) {
     const name = u.name || 'User';
     const email = u.email || '—';
-    const isClient = u.isClient === true && !isDeletedUser(u);
+    const profileStatus = getAccountProfileStatus(u);
+    const isBillingClient = profileStatus === 'unpaid' || profileStatus === 'client';
     const status = getUserStatusBadge(u);
-    return `<div class="user-card${isClient ? ' is-client' : ''}${isDeletedUser(u) ? ' is-deleted' : ''}">
+    return `<div class="user-card${isBillingClient ? ' is-client' : ''}${profileStatus === 'deleted' ? ' is-deleted' : ''}">
       <div class="user-avatar">${escapeHtml(getInitials(name))}</div>
       <div class="user-info">
         <div class="user-name-row">
@@ -1244,8 +1266,20 @@
     if (page !== 'list' && !force) return;
 
     const filter = window.listFilter || 'all';
-    const eyebrows = { all: 'Accounts', clients: 'Clients', registered: 'Accounts' };
-    const titles = { all: 'All Accounts', clients: 'Paid Clients', registered: 'Registered Users' };
+    const eyebrows = {
+      all: 'Accounts',
+      clients: 'Clients',
+      unpaid: 'Billing',
+      registered: 'Accounts',
+      deleted: 'Accounts',
+    };
+    const titles = {
+      all: 'All Accounts',
+      clients: 'Paid Clients',
+      unpaid: 'Unpaid Clients',
+      registered: 'Registered Users',
+      deleted: 'Deleted Accounts',
+    };
     const eyebrowEl = document.getElementById('list-eyebrow');
     const titleEl = document.getElementById('list-title');
     if (eyebrowEl) eyebrowEl.textContent = eyebrows[filter] || 'Accounts';
@@ -1256,18 +1290,24 @@
 
     const allUsers = [...usersMap.values()].filter((u) => u?.id);
     const allAccounts = allUsers.filter(isAnyAccount).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    const clients = allUsers.filter(isClientUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const paidClients = allAccounts.filter(isPaidClientUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const unpaidClients = allAccounts.filter(isUnpaidClientUser).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    const registeredOnly = allAccounts.filter((u) => getAccountProfileStatus(u) === 'registered');
+    const deletedOnly = allAccounts.filter((u) => getAccountProfileStatus(u) === 'deleted');
 
-    const registeredOnly = allAccounts.filter((u) => !isClientUser(u));
     const groups = filter === 'clients'
-      ? [{ label: 'Clients', users: clients }]
+      ? [{ label: 'Paid clients', users: paidClients }]
+      : filter === 'unpaid'
+      ? [{ label: 'Unpaid clients', users: unpaidClients }]
       : filter === 'registered'
       ? [{ label: 'Registered', users: registeredOnly }]
+      : filter === 'deleted'
+      ? [{ label: 'Deleted', users: deletedOnly }]
       : [{ label: 'All Accounts', users: allAccounts }];
 
     const hasAny = groups.some((g) => g.users.length > 0);
     const listSignature = filter + '|' + groups.map((g) =>
-      g.label + ':' + g.users.map((u) => `${u.id}:${u.isClient ? 1 : 0}:${u.deleted ? 1 : 0}:${u.name || ''}`).join(',')
+      g.label + ':' + g.users.map((u) => `${u.id}:${getAccountProfileStatus(u)}:${u.name || ''}`).join(',')
     ).join(';');
 
     if (force || listSignature !== lastListSignature) {
@@ -1293,10 +1333,11 @@
   function updateDashboardCounts() {
     const allUsers = [...usersMap.values()].filter((u) => u?.id);
     const allAccounts = allUsers.filter(isAnyAccount);
-    const clients = allUsers.filter(isClientUser);
+    const paidClients = allAccounts.filter(isPaidClientUser);
+    const billingClients = allAccounts.filter(isClientUser);
     window.adminAllAccountsList = allAccounts;
     window.adminUsersList = allAccounts;
-    updateDashboardTiles(clients, allAccounts, getTotalUnread());
+    updateDashboardTiles(paidClients, allAccounts, getTotalUnread(), billingClients);
   }
 
   window.renderAdminUserLists = renderAdminUserLists;
@@ -1614,6 +1655,10 @@
 
   window.SUBSCRIPTION_PLANS = SUBSCRIPTION_PLANS;
   window.getSubscriptionPlanById = getPlanById;
+  window.getClientSubscriptionState = getClientSubscriptionState;
+  window.getAccountProfileStatus = getAccountProfileStatus;
+  window.getAccountProfileBadge = getAccountProfileBadge;
+  window.adminGetUser = (uid) => usersMap.get(uid) || null;
 
   window.updateUserSubscription = async function updateUserSubscription(uid, planId) {
     if (!uid) return;
@@ -1844,8 +1889,9 @@
     else if (name === 'chat') {
       if (window.renderChatTabs) window.renderChatTabs();
       if (window.onAdminChatTabOpen) window.onAdminChatTabOpen();
-    } else if (name === 'invoices' && window.renderInvoices) {
-      window.renderInvoices();
+    } else if (name === 'invoices') {
+      if (window.updateDashboardCounts) window.updateDashboardCounts();
+      if (window.renderInvoices) window.renderInvoices();
     } else if (name === 'overview') {
       if (window.updateDashboardCounts) window.updateDashboardCounts();
       if (window.updateChatUnreadIndicators) window.updateChatUnreadIndicators();
@@ -1903,34 +1949,36 @@
   }
 
   function renderSubscriptionCard(u) {
-    const deleted = window.isDeletedUser ? window.isDeletedUser(u) : (u.deleted === true || !!u.deletedAt);
-    const isClient = u.isClient === true && !deleted;
-    const sub = getClientSubscriptionState(u);
+    const profileStatus = window.getAccountProfileStatus ? window.getAccountProfileStatus(u) : 'registered';
+    const badgeInfo = window.getAccountProfileBadge ? window.getAccountProfileBadge(profileStatus) : { text: profileStatus, cls: profileStatus };
+    const deleted = profileStatus === 'deleted';
+    const isBillingClient = profileStatus === 'unpaid' || profileStatus === 'client';
+    const sub = window.getClientSubscriptionState ? window.getClientSubscriptionState(u) : { isActive: false, needsPayment: false };
     const since = formatJoinedLocal(u.createdAt);
     const plan = window.getSubscriptionPlanById ? window.getSubscriptionPlanById(u.subscriptionPlan) : null;
-    const amountLabel = isClient && plan ? plan.displayAmount : '—';
+    const amountLabel = isBillingClient && plan ? plan.displayAmount : '—';
     const nextBilling = sub.isActive ? formatNextBillingLocal(u) : null;
-    const payLabel = sub.isActive ? 'Subscribed' : sub.needsPayment ? 'Awaiting payment' : '—';
+    const payLabel = sub.isActive ? 'Subscribed' : sub.needsPayment ? 'Awaiting payment' : isBillingClient ? 'No plan assigned' : '—';
     const planOptions = (window.SUBSCRIPTION_PLANS || []).map((p) => {
       const sel = u.subscriptionPlan === p.id ? ' selected' : '';
       return `<option value="${p.id}"${sel}>${esc(p.label)} — ${esc(p.displayAmount)}/yr</option>`;
     }).join('');
     const currentPlan = u.subscriptionPlan || '';
-    const statusLabel = deleted ? 'deleted' : isClient ? 'active' : 'registered';
-    const statusClass = deleted ? ' deleted' : isClient ? '' : ' registered';
+    const statusLabel = badgeInfo.text.toLowerCase();
+    const statusClass = badgeInfo.cls ? ` ${badgeInfo.cls}` : '';
 
-    return `<div class="sub-card${isClient ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
+    return `<div class="sub-card${isBillingClient ? '' : ' inactive'}${deleted ? ' is-deleted' : ''}">
       <div class="sub-card-header">
         <div class="user-avatar" style="width:42px;height:42px;border-radius:13px;">${esc(getInitialsLocal(u.name || 'User'))}</div>
         <div style="flex:1;min-width:0;">
           ${window.profileNameLink(u.id, u.name || 'User', 'invoices', 'user-name')}
           <div class="user-email">${esc(u.email || '—')}</div>
         </div>
-        <span class="sub-status${statusClass}">${statusLabel}</span>
+        <span class="sub-status${statusClass}">${esc(statusLabel)}</span>
       </div>
       <div class="sub-row">
         <span class="sub-row-label">Plan</span>
-        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${deleted ? '1' : '0'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isClient ? '' : ' disabled'}>
+        <select class="sub-plan-select" data-sub-user="${esc(u.id)}" data-current-plan="${esc(currentPlan)}" data-deleted="${deleted ? '1' : '0'}" data-inactive="${isBillingClient ? '0' : '1'}" aria-label="Subscription plan for ${esc(u.name || 'user')}"${isBillingClient ? '' : ' disabled'}>
           <option value=""${!currentPlan ? ' selected' : ''}>No subscription</option>
           ${planOptions}
         </select>
@@ -1941,13 +1989,14 @@
       </div>
       <div class="sub-row">
         <span class="sub-row-label">Amount per year</span>
-        <span class="sub-row-value${isClient ? '' : ' muted'}">${esc(amountLabel)}</span>
+        <span class="sub-row-value${isBillingClient && plan ? '' : ' muted'}">${esc(amountLabel)}</span>
       </div>
       ${sub.isActive ? `<div class="sub-row"><span class="sub-row-label">Next billing</span><span class="sub-row-value">${esc(nextBilling)}</span></div>` : ''}
       <div class="sub-row">
         <span class="sub-row-label">Member since</span>
         <span class="sub-row-value">${esc(since)}</span>
       </div>
+      ${profileStatus === 'registered' ? '<div class="sub-row"><span class="sub-row-label">Note</span><span class="sub-row-value muted">Enable client on profile to assign a plan</span></div>' : ''}
     </div>`;
   }
 
@@ -2069,52 +2118,74 @@
   }
 
   function renderInvoices() {
-    const users = (window.adminAllAccountsList || window.adminUsersList || [])
-      .slice()
-      .sort((a, b) => {
-        const aActive = a.isClient === true ? 0 : 1;
-        const bActive = b.isClient === true ? 0 : 1;
-        if (aActive !== bActive) return aActive - bActive;
-        return String(a.name || '').localeCompare(String(b.name || ''));
-      });
-    const clients = users.filter((u) => u.isClient === true && u.deleted !== true);
-
-    const ovInv = document.getElementById('ov-invoices');
-    if (ovInv) {
-      ovInv.textContent = String(clients.length);
-      document.getElementById('tile-invoices')?.classList.toggle('active', clients.length > 0 || true);
-    }
-
     const subPanel = document.getElementById('inv-subscriptions');
     const autoPanel = document.getElementById('inv-automated');
     if (!subPanel || !autoPanel) return;
 
-    subPanel.innerHTML = `
-      <a class="stripe-link" href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">
-        <div class="stripe-link-inner">
-          <div class="stripe-icon">⚡</div>
-          <div>
-            <div class="stripe-title">Stripe Dashboard</div>
-            <div class="stripe-sub">Manage payments &amp; subscriptions</div>
+    try {
+      const users = (window.adminAllAccountsList || window.adminUsersList || [])
+        .slice()
+        .sort((a, b) => {
+          const order = { client: 0, unpaid: 1, registered: 2, deleted: 3 };
+          const aStatus = window.getAccountProfileStatus ? window.getAccountProfileStatus(a) : 'registered';
+          const bStatus = window.getAccountProfileStatus ? window.getAccountProfileStatus(b) : 'registered';
+          const aRank = order[aStatus] ?? 9;
+          const bRank = order[bStatus] ?? 9;
+          if (aRank !== bRank) return aRank - bRank;
+          return String(a.name || '').localeCompare(String(b.name || ''));
+        });
+      const billingClients = users.filter((u) => {
+        const status = window.getAccountProfileStatus ? window.getAccountProfileStatus(u) : '';
+        return status === 'unpaid' || status === 'client';
+      });
+      const unpaidCount = users.filter((u) => window.getAccountProfileStatus?.(u) === 'unpaid').length;
+
+      const ovInv = document.getElementById('ov-invoices');
+      if (ovInv) {
+        ovInv.textContent = String(billingClients.length);
+        document.getElementById('tile-invoices')?.classList.toggle('active', billingClients.length > 0);
+      }
+
+      const activeTab = typeof invoiceTab === 'string' ? invoiceTab : 'subscriptions';
+      subPanel.classList.toggle('hidden', activeTab !== 'subscriptions');
+      autoPanel.classList.toggle('hidden', activeTab !== 'automated');
+
+      if (activeTab === 'subscriptions') {
+        subPanel.innerHTML = `
+          <a class="stripe-link" href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">
+            <div class="stripe-link-inner">
+              <div class="stripe-icon">⚡</div>
+              <div>
+                <div class="stripe-title">Stripe Dashboard</div>
+                <div class="stripe-sub">Manage payments &amp; subscriptions</div>
+              </div>
+            </div>
+            <span class="stripe-arrow">→</span>
+          </a>
+          <p class="sub-label">Yearly subscriptions · ${billingClients.length} client${billingClients.length === 1 ? '' : 's'}${unpaidCount ? ` · ${unpaidCount} awaiting payment` : ''}</p>
+          ${users.length === 0
+            ? '<p class="empty-state">No accounts yet.</p>'
+            : users.map((u) => renderSubscriptionCard(u)).join('')}`;
+
+        bindSubscriptionSelects(subPanel);
+        if (window.bindProfileLinks) window.bindProfileLinks(subPanel);
+      }
+
+      if (activeTab === 'automated') {
+        autoPanel.innerHTML = `
+          <div class="auto-header">
+            <p class="sub-label" style="margin:0;">Pre-written · Sent automatically</p>
+            <button type="button" class="btn-add-msg" onclick="startAddAutoMsg()">+ Add</button>
           </div>
-        </div>
-        <span class="stripe-arrow">→</span>
-      </a>
-      <p class="sub-label">Yearly Subscriptions · ${clients.length} active</p>
-      ${users.length === 0 ? '<p class="empty-state">No accounts yet.</p>' : users.map((u) => renderSubscriptionCard(u)).join('')}`;
+          ${addingNewMsg ? renderAutoForm('new') : ''}
+          ${autoMessages.map((msg) => editingMsgId === msg.id ? renderAutoForm('edit', msg) : renderAutoCard(msg)).join('')}`;
 
-    bindSubscriptionSelects(subPanel);
-
-    autoPanel.innerHTML = `
-      <div class="auto-header">
-        <p class="sub-label" style="margin:0;">Pre-written · Sent automatically</p>
-        <button type="button" class="btn-add-msg" onclick="startAddAutoMsg()">+ Add</button>
-      </div>
-      ${addingNewMsg ? renderAutoForm('new') : ''}
-      ${autoMessages.map((msg) => editingMsgId === msg.id ? renderAutoForm('edit', msg) : renderAutoCard(msg)).join('')}`;
-
-    bindAutoFormEvents();
-    if (window.bindProfileLinks) window.bindProfileLinks(subPanel);
+        bindAutoFormEvents();
+      }
+    } catch (err) {
+      console.error('renderInvoices failed', err);
+      subPanel.innerHTML = '<p class="empty-state">Could not load subscriptions. Refresh the page.</p>';
+    }
   }
   window.renderInvoices = renderInvoices;
 
@@ -2234,8 +2305,9 @@
   });
 
   function sendUpdate() {
-    const data = usersMap.get(window.activeProfileUid) || {};
-    if (isDeletedUser(data) || data.isClient !== true) return;
+    const uid = window.activeProfileUid;
+    const data = uid && window.adminGetUser ? window.adminGetUser(uid) : {};
+    if (window.isDeletedUser?.(data) || data.isClient !== true) return;
     const msg = document.getElementById('update-msg').value.trim();
     const conf = document.getElementById('update-confirm');
     if (!msg) return;
