@@ -120,7 +120,7 @@
   import { parseCheckoutParams } from './js/checkout-nav.js';
   import { ALLOWED_STRIPE_PRICE_IDS, getPlanIdForPriceId } from './js/stripe-config.js';
   import { getPlanById, getPlanByPriceId } from './js/subscription-plans.js';
-  import { createSubscription } from './js/stripe-client.js';
+  import { createSubscription, confirmSubscriptionPayment } from './js/stripe-client.js';
   import { mountSubscriptionPayment } from './js/stripe-payment.js';
   import { formatCallableError } from './js/callable-error.js';
 
@@ -137,6 +137,15 @@
     const msgEl = document.getElementById('checkout-payment-msg');
     msgEl.textContent = '';
     msgEl.classList.remove('error');
+  }
+
+  async function markPaymentComplete(plan) {
+    try {
+      await confirmSubscriptionPayment();
+    } catch (err) {
+      console.warn('confirmSubscriptionPayment:', err);
+    }
+    showSuccessView(plan);
   }
 
   function showSuccessView(plan) {
@@ -193,7 +202,7 @@
         mountEl,
         submitBtn: payBtn,
         onError: showError,
-        onSuccess: () => showSuccessView(plan),
+        onSuccess: () => markPaymentComplete(plan),
       });
     } catch (err) {
       console.error(err);
@@ -224,7 +233,7 @@
     const { priceId, planId, paymentSuccess } = parseCheckoutParams();
     if (paymentSuccess) {
       const plan = getPlanByPriceId(priceId) || getPlanById(planId);
-      showSuccessView(plan);
+      await markPaymentComplete(plan);
       return;
     }
 

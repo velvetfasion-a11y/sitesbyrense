@@ -8,6 +8,13 @@ export async function createSubscription({ planId, priceId } = {}) {
   return data;
 }
 
+export async function confirmSubscriptionPayment() {
+  await functionsReady;
+  const callable = httpsCallable(functions, 'confirmSubscriptionPayment');
+  const { data } = await callable({});
+  return data;
+}
+
 export async function assignStripeSubscription(uid, planId, priceId = null) {
   await functionsReady;
   const callable = httpsCallable(functions, 'assignStripeSubscription');

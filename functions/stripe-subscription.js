@@ -277,6 +277,62 @@ function createCreateSubscription(db) {
   );
 }
 
+async function confirmSubscriptionForUser(db, uid) {
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) throw new HttpsError('not-found', 'User not found');
+
+  const user = userSnap.data();
+  const subscriptionId = user.stripeSubscriptionId;
+  if (!subscriptionId) {
+    throw new HttpsError('failed-precondition', 'No subscription to confirm');
+  }
+
+  const stripe = getStripe();
+  let subscription = await stripe.subscriptions.retrieve(String(subscriptionId), {
+    expand: ['latest_invoice.payment_intent'],
+  });
+
+  if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+    const invoice = subscription.latest_invoice;
+    const paymentIntent = invoice && typeof invoice === 'object' ? invoice.payment_intent : null;
+    if (
+      paymentIntent
+      && typeof paymentIntent === 'object'
+      && ['succeeded', 'processing', 'requires_capture'].includes(paymentIntent.status)
+    ) {
+      subscription = { ...subscription, status: 'active' };
+    }
+  }
+
+  const planId = subscription.metadata?.planId || user.subscriptionPlan;
+  const plan = getPlanById(planId)
+    || getPlanByPriceId(subscription.metadata?.priceId || user.stripePriceId);
+
+  await syncSubscriptionToUser(userRef, subscription, {
+    planId: plan?.id || planId,
+    amount: plan?.amount ?? user.subscriptionAmount,
+    currency: plan?.currency ?? user.subscriptionCurrency,
+  });
+
+  const paid = subscription.status === 'active' || subscription.status === 'trialing';
+  return { status: subscription.status, paid };
+}
+
+function createConfirmSubscriptionPayment(db) {
+  return onCall(
+    { region: REGION, cors: CALLABLE_CORS, invoker: 'public' },
+    async (request) => {
+      try {
+        if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+        return await confirmSubscriptionForUser(db, request.auth.uid);
+      } catch (error) {
+        handleCallableError('confirmSubscriptionPayment', error);
+      }
+    }
+  );
+}
+
 function createStripeWebhook(db) {
   return onRequest(
     { region: REGION },
@@ -379,5 +435,6 @@ function createStripeWebhook(db) {
 module.exports = {
   createAssignStripeSubscription,
   createCreateSubscription,
+  createConfirmSubscriptionPayment,
   createStripeWebhook,
 };
