@@ -205,10 +205,13 @@
   #page-profile.profile-is-inactive #client-toggle { display: none !important; }
   #page-profile.profile-is-inactive #btn-send-invoice { display: none; }
   #page-profile.profile-is-deleted .profile-actions,
-  #page-profile.profile-is-deleted #prof-publish-section,
-  #page-profile.profile-is-deleted .btn-remove-user { display: none !important; }
+  #page-profile.profile-is-deleted #prof-publish-section { display: none !important; }
   #page-profile.profile-is-deleted .profile-dimmed { opacity: 0.35; pointer-events: none; }
   #page-profile.profile-is-deleted .profile-contact-block { opacity: 1; pointer-events: auto; }
+  .btn-remove-user.permanent {
+    border-color: rgba(255,60,60,0.35);
+    color: rgba(255,80,80,0.75);
+  }
 
   .sub-status.deleted { border-color: rgba(248,113,113,0.55); color: #f87171; }
   .sub-card.is-deleted { opacity: 0.55; border-color: rgba(248,113,113,0.2); }
@@ -711,7 +714,7 @@
     </div>
     </div>
 
-    <button type="button" class="btn-remove-user" onclick="removeAdminUser()">Remove User</button>
+    <button type="button" class="btn-remove-user" id="btn-remove-user" onclick="removeAdminUser()">Remove User</button>
   </div>
 
   <!-- ── CHAT ── -->
@@ -1041,6 +1044,12 @@
     if (deletedBanner) deletedBanner.hidden = !terminated;
     if (inactiveBanner) inactiveBanner.hidden = true;
 
+    const removeBtn = document.getElementById('btn-remove-user');
+    if (removeBtn) {
+      removeBtn.textContent = terminated ? 'Delete account permanently' : 'Remove User';
+      removeBtn.classList.toggle('permanent', terminated);
+    }
+
     const websiteSection = document.getElementById('prof-website-section');
     const progressSection = document.getElementById('prof-progress-section');
     const publishSection = document.getElementById('prof-publish-section');
@@ -1159,12 +1168,27 @@
 
   window.removeAdminUser = async function removeAdminUser() {
     if (!activeProfileUid) return;
-    const name = document.getElementById('prof-name')?.textContent || 'this user';
-    if (!confirm(`Mark ${name} as deleted? Their record will stay in Accounts for reference.`)) return;
     const uid = activeProfileUid;
+    const data = usersMap.get(uid) || {};
+    const name = document.getElementById('prof-name')?.textContent || 'this user';
+    const alreadyDeleted = isDeletedUser(data);
+
+    if (alreadyDeleted) {
+      if (!confirm(`Permanently delete ${name}? This removes their profile from Accounts and cannot be undone.`)) return;
+    } else if (!confirm(`Mark ${name} as deleted? Their record will stay in Accounts for reference.`)) {
+      return;
+    }
+
     try {
-      await deleteUserData(uid, { keepRecord: true });
-      if (window.showToast) window.showToast('User marked as deleted ✓');
+      await deleteUserData(uid, { keepRecord: !alreadyDeleted });
+      if (window.showToast) {
+        window.showToast(alreadyDeleted ? 'Account deleted permanently ✓' : 'User marked as deleted ✓');
+      }
+      usersMap.delete(uid);
+      collectionUsers.delete(uid);
+      closeProfileView();
+      activeProfileUid = null;
+      window.activeProfileUid = null;
       refreshAdminUI();
       switchTab(window.profileReturnTab || 'list');
     } catch (err) {
